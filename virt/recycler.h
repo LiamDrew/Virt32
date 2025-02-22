@@ -4,10 +4,7 @@
 #include <stdlib.h>
 #include "mem_state.h"
 
-typedef struct {
-    uint32_t capacity;
-    uint32_t size;
-} Memory_t;
+
 
 
 // based on the size of the segment we want, calculate the index of the queue 
