@@ -2,6 +2,8 @@
 #include "driver.h"
 #include "mem_state.h"
 
+#include "stack.h"
+#include "recycler.h"
 
 int main(int argc, char **argv)
 {

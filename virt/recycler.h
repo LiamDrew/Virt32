@@ -3,13 +3,11 @@
 
 #include <stdlib.h>
 #include "mem_state.h"
-
-typedef struct {
-    uint32_t capacity;
-    uint32_t size;
-} Memory_t;
+#include "stack.h"
 
 
+
+void* recycler_init(void);
 // based on the size of the segment we want, calculate the index of the queue 
 // using the log and bitshifts
 uint32_t find_freed_segment(Mem_T *mem, uint32_t size);
