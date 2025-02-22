@@ -55,8 +55,9 @@ uint32_t vs_malloc(Mem_T *mem, uint32_t size)
 
     // Look for segments to be recycled. If there are freed segments that are
     // ready to be recycled, recycled them
-    uint32_t temp = find_freed_segment(mem, size);
-    (void)temp;
+    
+    // uint32_t temp = find_freed_segment(mem, size);
+    // (void)temp;
 
     // If there are no segments to be recycled, carve a fresh one from the deep
     // blue C
