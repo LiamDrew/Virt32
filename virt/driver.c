@@ -109,8 +109,11 @@ uint32_t vs_malloc(Mem_T *mem, uint32_t size)
 
 void *convert_address(Mem_T *mem, uint32_t addr)
 {
-    void *seg = mem->mem;
-    void *ptr = (uintptr_t)seg + (uintptr_t)addr;
+    (void)mem;
+    (void)addr;
+    // void *seg = mem->mem;
+    // void *ptr = (uintptr_t)seg + (uintptr_t)addr;
+    return NULL;
 }
 
 void vs_free(Mem_T *mem, uint32_t addr)
