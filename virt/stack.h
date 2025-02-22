@@ -1,3 +1,5 @@
+#ifndef STACK_H
+#define STACK_H
 #include <stdlib.h>
 
 
@@ -14,3 +16,5 @@ void stack_expand(Stack* s);
 uint32_t stack_pop(Stack* s);
 void stack_free(Stack* s);
 int stack_is_empty(Stack *s);
+
+#endif 

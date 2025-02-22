@@ -3,21 +3,31 @@
 
 #define SIZE 27
 
-void init(void* recycler)
+void* recycler_init(void)
 {
-    recycler = malloc(sizeof(Stack) * SIZE);
+    void* recycler = malloc(sizeof(Stack) * SIZE);
     for (int i = 0; i < SIZE; i++) {
         Stack* s = stack_init(10);
         ((Stack*)recycler)[i] = *s;
     }
+
+    return recycler;
 }
 
 uint32_t find_freed_segment(Mem_T *mem, uint32_t size)
 {
     int index = size; /* TODO: get log2 of size */
     Stack* s = &((Stack*)mem->recycler)[index];
+
     if (stack_is_empty(s) == -1) {
-        return -1;
+        int new_idx = (index + 1) % SIZE;
+        Stack* next_s = &((Stack*)mem->recycler)[new_idx];
+
+        if (stack_is_empty(next_s) == -1) {
+            return -1;
+        }
+
+        return stack_pop(next_s);
     }
     
     uint32_t freed_segment = stack_pop(s);
