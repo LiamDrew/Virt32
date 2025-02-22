@@ -12,9 +12,10 @@
 #define DRIVER_H
 
 #include <stdint.h>
+#include "mem_state.h"
 
 // Initialize the virtual memory system
-void init_memory_system(uint32_t kernel_size);
+Mem_T *init_memory_system(uint32_t kernel_size);
 
 /* Kernel malloc (kern_malloc): Overwrite whatever is in the zero
  * segment, regardless of whether something has been allocated there or not.
@@ -29,13 +30,17 @@ void *kern_realloc(uint32_t size, void *addr);
 
 /* Virtual segment malloc (vs_malloc): Carve out a segment of physical memory 
  * and serve it to the program as virtual memory. */
-void *vs_malloc(uint32_t size);
+uint32_t vs_malloc(Mem_T *mem, uint32_t size);
 
-/* Virtual segment calloc (vs_calloc): Same thing as vs_malloc, but zero all
- * the memory needed ahead of time */
-void *vs_calloc(uint32_t size);
+// /* Virtual segment calloc (vs_calloc): Same thing as vs_malloc, but zero all
+//  * the memory needed ahead of time */
+// void *vs_calloc(uint32_t size);
+
+void *convert_address(void);
 
 /* Virtual segment free (vs_free): Free a virtual segment for future use. */
-void vs_free(void *addr);
+void vs_free(Mem_T *mem, uint32_t addr);
+
+
 
 #endif

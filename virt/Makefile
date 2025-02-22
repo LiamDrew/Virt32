@@ -7,7 +7,7 @@ CC = clang
 CFLAGS = -Wall -Wextra -Werror -Wpedantic # we can optimize later
 
 virt: main.o driver.o recycler.o
-	$(CC) $(CFLAGS) -o virt main.o driver.o recycler.o
+	$(CC) $(CFLAGS) -o virt main.o recycler.o driver.o
 
 main.o: main.c
 	$(CC) $(CFLAGS) -c main.c
