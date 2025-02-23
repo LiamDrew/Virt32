@@ -6,11 +6,24 @@
 CC = clang
 CFLAGS = -Wall -Wextra -Werror -Wpedantic # we can optimize later
 
+all: virt test
+
+test: test_stack test_recycler
+
 virt: main.o driver.o recycler.o mem_state.o stack.o
 	$(CC) $(CFLAGS) -o virt main.o driver.o recycler.o mem_state.o stack.o
 
-main.o: main.c stack.c
-	$(CC) $(CFLAGS) -c main.c stack.c
+test_stack: stack_test.o stack.o
+	$(CC) $(CFLAGS) -o test_stack stack_test.o stack.o
+
+test_recycler: recycler_test.o recycler.o stack.o mem_state.o driver.o
+	$(CC) $(CFLAGS) -o test_recycler recycler_test.o recycler.o stack.o mem_state.o driver.o
+
+main.o: main.c
+	$(CC) $(CFLAGS) -c main.c
+
+stack_test.o: stack_test.c
+	$(CC) $(CFLAGS) -c stack_test.c
 
 driver.o: driver.c
 	$(CC) $(CFLAGS) -c driver.c
@@ -25,5 +38,10 @@ mem_state.o: mem_state.c
 	$(CC) $(CFLAGS) -c mem_state.c
 
 clean:
-	rm -f *.o virt
+	rm -f *.o virt test_stack test_recycler
+
+testall:
+	./test_stack 
+	./test_recycler
+
 
