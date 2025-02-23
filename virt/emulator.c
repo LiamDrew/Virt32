@@ -358,7 +358,7 @@ void load_segment(uint32_t index, uint32_t *zero, Mem_T *mem)
         return;
     }
 
-    assert(false);
+    // assert(false);
 
     // printf("This is a sandmark thing\n");
 
@@ -373,9 +373,11 @@ void load_segment(uint32_t index, uint32_t *zero, Mem_T *mem)
     my_addr--;
     uint32_t copy_size = *my_addr;
 
-    
+    kern_recalloc(mem, copy_size);
 
-    // printf("Copying segment of size %u\n", copy_size);
+
+
+    printf("Copying segment of size %u\n", copy_size);
 
     for (uint32_t i = 0; i < (copy_size / 4); i++) {
         uint32_t my_temp = my_addr[i];
@@ -388,9 +390,10 @@ void load_segment(uint32_t index, uint32_t *zero, Mem_T *mem)
     }
 
 
+
     // printf("Actually trying to run load segment\n");
 
-    // printf("making it to the end of memcpy\n");
+    printf("making it to the end of load program\n");
     // kern_memcpy(mem, index, 0, 10);
     // assert(false);
 }

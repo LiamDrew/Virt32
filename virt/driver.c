@@ -102,15 +102,15 @@ uint32_t vs_malloc(Mem_T *mem, uint32_t size)
     /* Look for segments to be recycled. If there are freed segments that are
      * ready to be recycled, recycled them */
     
-    uint32_t freed_seg = find_freed_segment(mem, size);
+    // uint32_t freed_seg = find_freed_segment(mem, size);
 
-     /* check that a free segment is available */
-    if (freed_seg) {
-        // update capacity, size, and usable beginner address for client
-        uint32_t *freed_seg_addr = convert_address(mem, freed_seg);
-        freed_seg_addr[-1] = size;
-        return freed_seg;
-    }
+    //  /* check that a free segment is available */
+    // if (freed_seg) {
+    //     // update capacity, size, and usable beginner address for client
+    //     uint32_t *freed_seg_addr = convert_address(mem, freed_seg);
+    //     freed_seg_addr[-1] = size;
+    //     return freed_seg;
+    // }
     
     /* If no segments can be recycled, carve a fresh one from the heap */
     
