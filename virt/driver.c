@@ -15,6 +15,7 @@
 #include <string.h>
 
 #define GB4 4294967296
+#define BOOK_SIZE 8
 
 /* This allows us to keep memory state private to the driver module */
 static Mem_T *mem_state = NULL;
@@ -38,10 +39,14 @@ Mem_T* init_memory_system(uint32_t kernel_size)
     void *mem = mmap(NULL, GB4, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
     mem_state->mem = mem;
+    mem_state->usable_mem = (void*)((char*)mem + BOOK_SIZE);
     mem_state->recycler = recycler_init();
 
-    mem_state->kernel_size = kernel_size;
-    mem_state->beg_unused = kernel_size;
+    printf("Start of mem: %p\n", mem_state->mem);
+    printf("Start of usable mem: %p\n", mem_state->usable_mem);
+
+    mem_state->kernel_virtual_size = kernel_size;
+    mem_state->begin_unused = kernel_size;
 
     return mem_state;
 }
@@ -82,40 +87,38 @@ uint32_t vs_malloc(Mem_T *mem, uint32_t size)
 
     // uint32_t temp = find_freed_segment(mem, size);
 
-    // if (temp != NULL) {
+    // if (temp != 0) {
         // update capacity, size, and usable beginner address for client
         // return temp
     // }
 
     // If there are no segments to be recycled, carve a fresh one from the heap
 
-    // The starting index beyond which the heap is large
-    // TODO: get this from kernel size on init
-    // Keep track of this as program runs
-
-    uint32_t beg_open = mem->beg_unused;
-    printf("The start of the unused memory is %u\n", beg_open);
+    // beginning virtual 
+    uint32_t begin_open = mem->begin_unused;
+    printf("The start of the unused memory is %u\n", begin_open);
     
     // find number of 32 byte blocks need to support the allocation request
     uint32_t num_blocks = get_blocks_from_alloc_size(size);
     uint32_t capac = 32 * num_blocks;
 
     // update the beginning of the unused heap
-    mem->beg_unused = beg_open + capac;
+    mem->begin_unused = begin_open + capac;
 
-    // get the physical memory
-    uint32_t *phys = (uint32_t*)mem->mem;
+    // get the beginning of usable physical memory
+    uint32_t *phys = (uint32_t*)mem->usable_mem;
     (void)phys;
 
-    char *start_addr = (char*)mem->mem + beg_open;
+    char *start_addr = (char*)mem->usable_mem + begin_open;
+    (void)start_addr;
     
-    printf("Start addr is %s\n", start_addr);
+    // printf("Start addr is %p\n", (void*)start_addr);
 
-    phys[beg_open] = capac;
-    phys[beg_open + 1] = size;
+    phys[begin_open] = capac;
+    phys[begin_open + 1] = size;
 
     // Add 8 bytes to the client-facing address (to skip over our bookkeeping)
-    return beg_open + 8;
+    return begin_open + 8;
 }
 
 uint32_t vs_calloc(Mem_T *mem, uint32_t size){
