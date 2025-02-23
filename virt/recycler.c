@@ -19,7 +19,8 @@ void* recycler_init(void)
 //TODO: revert to beg_unused if no stack opt. exists
 uint32_t find_freed_segment(Mem_T *mem, uint32_t size)
 {
-    uint32_t index = get_blocks_from_alloc_size(size) - 2;
+    printf("Size here is %u\n", size);
+    uint32_t index = get_blocks_from_alloc_size(size) - 1;
     printf("This is index %d\n", index);
     Stack* s = &((Stack*)mem->recycler)[index];
 

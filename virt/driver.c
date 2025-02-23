@@ -183,13 +183,15 @@ uint32_t get_at(Mem_T *mem, uint32_t base, uint32_t offset)
 
 void safe_set_at(Mem_T *mem, uint32_t base, uint32_t offset, uint32_t value)
 {
-    // uint32_t spot_to_access = base + offset;
+    
     // check base is a valid base
     assert(!((base - 8) % 32));
-    
+
+    //uint32_t spot_to_access = base + offset;
     // bounds checking: ensure user accesses memory they have permissions on
     // makes sure address provided is not located in kernel and will not
     // go past bookkeeping of first malloc/calloc
+    //uint32_t *ptr = convert_address
     
     
     // convert_address
