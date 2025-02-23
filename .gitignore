@@ -1,1 +1,3 @@
 /.vscode
+virt/virt
+*.o
