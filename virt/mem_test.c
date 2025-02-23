@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <assert.h>
 
 #include "driver.h"
 
@@ -13,11 +14,15 @@ int main(int argc, char **argv)
     uint32_t a2 = get_blocks_from_alloc_size(24);
     uint32_t a3 = get_blocks_from_alloc_size(25);
 
-    printf("Block size should be 1 %u\n", a1);
-    printf("Block size should be 1 %u\n", a2);
-    printf("Block size should be 2 %u\n", a3);
+    assert(a1 == 1);
+    assert(a2 == 1);
+    assert(a3 == 2);
 
-    uint32_t kernel_size = 100000;
+    // printf("Block size should be 1 %u\n", a1);
+    // printf("Block size should be 1 %u\n", a2);
+    // printf("Block size should be 2 %u\n", a3);
+
+    uint32_t kernel_size = 65536;
 
     Mem_T *mem = init_memory_system(kernel_size);
     (void)mem;
@@ -28,24 +33,24 @@ int main(int argc, char **argv)
 
     uint32_t res2 = vs_malloc(mem, 25);
 
-    printf("Address of first malloc %u\n", first_malloc_result);
-    printf("Address of second malloc %u\n", res2);
+    printf("Address of first malloc %u\n", first_malloc_result - kernel_size);
+    printf("Address of second malloc %u\n", res2 - kernel_size);
 
-    vs_free(mem, first_malloc_result);
+    vs_free(mem, first_malloc_result - kernel_size);
 
-    /* Testing vs_malloc when freed segments are available */
+    /* Testing vs_malloc when freed segments are available */ 
     uint32_t malloc_result1 = vs_malloc(mem, 25);
-    printf("Address of third malloc %u\n", malloc_result1);
+    printf("Address of third malloc %u\n", malloc_result1 - kernel_size);
 
+    uint32_t available_capacity = 4294967296 - kernel_size - 16;
 
     /* Testing vs_malloc when allocating entire memory */
-    uint32_t malloc_result2 = vs_malloc(mem, 33554432);
-    printf("Address of fourth malloc %u\n", malloc_result2);
+    uint32_t malloc_result2 = vs_malloc(mem, available_capacity);
+    printf("Address of fourth malloc %u\n", malloc_result2 - kernel_size);
+    // assert((malloc_result2 - kernel_size) == 0);
 
-    // uint32_t = 4294967296 - 2^16 - 16
-
-    vs_free(mem, malloc_result1);
-    vs_free(mem, res2);
+    // vs_free(mem, malloc_result1);
+    // vs_free(mem, res2);
 
     // malloc_result2 = vs_malloc(mem, 2147483648);
     // printf("Address of fourth malloc %u\n", malloc_result2);

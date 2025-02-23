@@ -27,10 +27,10 @@ uint32_t find_freed_segment(Mem_T *mem, uint32_t size)
     if (stack_is_empty(s)) {
         uint32_t new_idx = (index + 1) % SIZE;
         Stack* next_s = &((Stack*)mem->recycler)[new_idx];
-        printf("Inside the next index\n");
+        // printf("Inside the next index\n");
 
         if (stack_is_empty(next_s)) {
-            return -1;
+            return 0;
         }
 
         return stack_pop(next_s);
@@ -43,9 +43,23 @@ uint32_t find_freed_segment(Mem_T *mem, uint32_t size)
 // Assuming that the seg_addr received is already processed
 void free_segment(Mem_T *mem, uint32_t seg_addr)
 {
-    uint32_t segment = seg_addr - 8;
-    int index = get_blocks_from_alloc_size(segment) - 1;
+    uint32_t bk_addr = seg_addr - 8;
+
+    /* Grab segment size from bookkeeping */
+    // uint32_t begin_open = mem->begin_unused;
+    uint32_t *phys = (uint32_t*)mem->usable_mem;
+    
+    printf("This is bk_addr %d\n", bk_addr);
+
+    int seg_cap = phys[65536 + bk_addr];
+    
+    printf("This is seg_cap %d\n", seg_cap);
+
+    int index = get_blocks_from_alloc_size(seg_cap) - 1;
     printf("index: %d\n", index);
-    stack_push(&((Stack*)(mem->recycler))[index], segment);
+    stack_push(&((Stack*)(mem->recycler))[index], seg_addr);
+    if (!stack_is_empty(&((Stack*)(mem->recycler))[6])) {
+        printf("inserted segment for 128\n");
+    }
 }
 
