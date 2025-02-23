@@ -87,11 +87,13 @@ uint32_t vs_malloc(Mem_T *mem, uint32_t size)
 
     // beginning virtual 
     uint32_t begin_open = mem->begin_unused;
-    printf("The start of the unused memory is %u\n", begin_open);
+    printf("The start of the unused memory is %u\n", begin_open - 65536);
     
     // find number of 32 byte blocks need to support the allocation request
     uint32_t num_blocks = get_blocks_from_alloc_size(size);
     uint32_t capac = 32 * num_blocks;
+
+    printf("This is initalized cap: %d\n", capac);
 
     // update the beginning of the unused heap
     mem->begin_unused = begin_open + capac;
