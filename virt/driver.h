@@ -26,16 +26,7 @@ Mem_T *init_memory_system(uint32_t kernel_size);
 
 uint32_t kern_recalloc(Mem_T *mem, uint32_t size);
 
-// /* Kernel malloc (kern_malloc): Overwrite whatever is in the zero
-//  * segment, regardless of whether something has been allocated there or not.
-//  * (This will be used for the Load Program instruction in the UM).
-//  */
-// void *kern_malloc(uint32_t size);
-
-// /* Kernel realloc (kern_realloc): Try to reallocate the zero segment (kernel
-//  * memory). Probably overwrite everything there. Fail if the user didn't leave 
-//  * enough space for the kernel on init */
-// void *kern_realloc(uint32_t size, void *addr);
+void kern_memcpy(Mem_T *mem, uint32_t src_addr, uint32_t dest_addr, uint32_t copy_size);
 
 /* Virtual segment malloc (vs_malloc): Carve out a segment of physical memory 
  * and serve it to the program as virtual memory. */

@@ -38,7 +38,7 @@ int main(int argc, char **argv)
 
     vs_free(mem, first_malloc_result - kernel_size);
 
-    /* Testing vs_malloc when freed segments are available */ 
+    /* Testing vs_malloc when freed segments are available */
     uint32_t malloc_result1 = vs_malloc(mem, 25);
     printf("Address of third malloc %u\n", malloc_result1 - kernel_size);
 

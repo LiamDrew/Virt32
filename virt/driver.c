@@ -16,10 +16,12 @@
 
 #define GB4 4294967296
 #define BOOK_SIZE 8
+#define BLOCK_SIZE 32
 
 /* This allows us to keep memory state private to the driver module */
 static Mem_T *mem_state = NULL;
 
+/* Convert address is private to this module */
 void *convert_address(Mem_T *mem, uint32_t addr);
 
 Mem_T* init_memory_system(uint32_t kernel_size)
@@ -51,10 +53,9 @@ Mem_T* init_memory_system(uint32_t kernel_size)
     return mem_state;
 }
 
-// Liam will do these two functions. They will be much more straightforward
-// than the general case virtual allocation
 uint32_t kern_recalloc(Mem_T *mem, uint32_t size)
 {
+    printf("Trying to alloc kernel memory\n");
     // Assert that the kernel has enough protected space for us to use
     assert(mem->kernel_virtual_size >= size);
 
@@ -68,51 +69,66 @@ uint32_t kern_recalloc(Mem_T *mem, uint32_t size)
     *mem_start = size;
 
     // zero out all the bytes the user wants
-    memcpy(mem->usable_mem, 0, size);
+    memset(mem->usable_mem, 0, size);
+
+    printf("Successfully allocated kernel memory\n");
 
     return 0;
 }
+
+
+void kern_memcpy(Mem_T *mem, uint32_t src_addr, uint32_t dest_addr, uint32_t copy_size)
+{
+    // only allow memcpy from user space to kernel space
+    // TODO: build some safety into this
+    
+    // get real source and dest addresses
+    void *real_src = convert_address(mem, src_addr);
+    void *real_dest = convert_address(mem, dest_addr);
+
+    (void)real_src;
+    (void)real_dest;
+    (void)copy_size;
+}
+
 
 uint32_t vs_malloc(Mem_T *mem, uint32_t size)
 {
     /* Look for segments to be recycled. If there are freed segments that are
      * ready to be recycled, recycled them */
-
     uint32_t freed_seg = find_freed_segment(mem, size);
 
-    if (freed_seg != 0) {
+     
+    if (freed_seg) {
         // update capacity, size, and usable beginner address for client
+        uint32_t *freed_seg_addr = convert_address(mem, freed_seg);
+        freed_seg_addr[-1] = size;
         return freed_seg;
     }
-
+    
     // If there are no segments to be recycled, carve a fresh one from the heap
 
-    // beginning virtual 
-    uint32_t begin_open = mem->begin_unused;
-    printf("The start of the unused memory is %u\n", begin_open);
+    // beginning virtual
+    uint32_t user_start = mem->begin_unused + BOOK_SIZE;
+    // printf("The start of the unused memory is %u\n", begin_open);
     
     /* Adding 1 to the idx to get the number of blocks the alloc needs
      * find number of 32 byte blocks need to support the allocation request */
     uint32_t num_blocks = get_idx_from_alloc_size(size) + 1;
-    uint32_t capac = 32 * num_blocks;
+    uint32_t user_cap = (num_blocks * BLOCK_SIZE) - BOOK_SIZE;
 
     // update the beginning of the unused heap
-    mem->begin_unused = begin_open + capac;
+    mem->begin_unused = user_start + user_cap;
 
-    // get the beginning of usable physical memory
-    uint32_t *phys = (uint32_t*)mem->usable_mem;
-    (void)phys;
-
-    char *start_addr = (char*)mem->usable_mem + begin_open;
-    (void)start_addr;
+    uint32_t *user_addr = convert_address(mem, user_start);
     
     // printf("Start addr is %p\n", (void*)start_addr);
 
-    phys[begin_open] = capac;
-    phys[begin_open + 1] = size;
+    user_addr[-2] = user_cap;
+    user_addr[-1] = size;
 
     // Add 8 bytes to the client-facing address (to skip over our bookkeeping)
-    return begin_open + BOOK_SIZE;
+    return user_start;
 }
 
 // NOTE: this function is intended to be private to this module. We don't want

@@ -49,7 +49,8 @@ int main(int argc, char **argv)
 
     /* vs_calloc tests */
     
-    uint32_t addr1 = vs_calloc(mem, 20);
+    // uint32_t addr1 = vs_calloc(mem, 20);
+    uint32_t addr1 = kern_recalloc(mem, 20);
     (void)addr1;
 
     //testing a store at address 0
