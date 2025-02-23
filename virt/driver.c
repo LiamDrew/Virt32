@@ -16,27 +16,29 @@
 
 #define GB4 4294967296
 
+/* This allows us to keep memory state private to the driver module */
+static Mem_T *mem_state = NULL;
+
 void *convert_address(Mem_T *mem, uint32_t addr);
 
-void init_segment_daemon(void);
-
 Mem_T* init_memory_system(uint32_t kernel_size)
-{
-    (void)kernel_size;
-    
-    Mem_T *mem_state = (Mem_T*) malloc(sizeof(Mem_T));
+{    
+    /* Safely initialize the memory state */
+    assert(mem_state == NULL);
+    mem_state = (Mem_T*) malloc(sizeof(Mem_T));
     assert(mem_state != NULL);
 
-    // printf("X is %lu\n", GB4);
-
-    // User gets no permission until they do anything
+    /* This mmap allocates 4GB of emulated physical memory.
+     * Ideally, we would protect this memory by giving the "user" program no 
+     * permissions and giving our "kernel" read and write privelege. However,
+     * as far as the real OS is concerned, our permission levels are one and the
+     * same, so we are enforcing security through abstraction. This is a less
+     * than ideal solution and we acknowledge this. We need hardware support to
+     * do this properly. */
     void *mem = mmap(NULL, GB4, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    // void *mem = mmap(NULL, GB4, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
     mem_state->mem = mem;
-
-    // TODO: will have to init the recycler
-    mem_state->recycler = NULL;
+    mem_state->recycler = recycler_init();
 
     mem_state->kernel_size = kernel_size;
     mem_state->beg_unused = kernel_size;
@@ -44,8 +46,20 @@ Mem_T* init_memory_system(uint32_t kernel_size)
     return mem_state;
 }
 
+// NOTE: this function is intended to be private to this module. We don't want
+// clients accessing 64 bit addresses
+inline void *convert_address(Mem_T *mem, uint32_t addr)
+{
+    void *seg = mem->mem;
+    void *ptr = ((char *)seg + addr);
+    return ptr;
+}
+
 // Liam will do these two functions. They will be much more straightforward
 // than the general case virtual allocation
+
+// uint32_t kern_overwrite();
+
 // TODO: Liam
 void *kern_malloc(uint32_t size)
 {
@@ -63,8 +77,9 @@ void *kern_realloc(uint32_t size, void *addr)
 
 uint32_t vs_malloc(Mem_T *mem, uint32_t size)
 {
-    // Look for segments to be recycled. If there are freed segments that are
-    // ready to be recycled, recycled them
+    /* Look for segments to be recycled. If there are freed segments that are
+     * ready to be recycled, recycled them */
+
     // uint32_t temp = find_freed_segment(mem, size);
 
     // if (temp != NULL) {
@@ -82,7 +97,7 @@ uint32_t vs_malloc(Mem_T *mem, uint32_t size)
     printf("The start of the unused memory is %u\n", beg_open);
     
     // find number of 32 byte blocks need to support the allocation request
-    uint32_t num_blocks = ((size + 8 - 1) / 32) + 1;
+    uint32_t num_blocks = get_blocks_from_alloc_size(size);
     uint32_t capac = 32 * num_blocks;
 
     // update the beginning of the unused heap
@@ -127,16 +142,15 @@ uint32_t vs_calloc(Mem_T *mem, uint32_t size){
     return addr;
 }
 
+// These will call the dangerous ones, which we will eventually want to make
+// the program fly
 
-// NOTE: this function is intended to be private to this module. We don't want
-// clients accessing 64 bit addresses
-void *convert_address(Mem_T *mem, uint32_t addr)
-{
-    void *seg = mem->mem;
-    void *ptr = ((char *)seg + addr);
-    return ptr;
-}
+// void safe_set_at
 
+// void safe_get_at
+
+
+// TODO: these could be made UM specific
 void set_at(Mem_T *mem, uint32_t addr, uint32_t size, void *src)
 {
     // check bounds
@@ -156,16 +170,12 @@ void get_at(Mem_T *mem, uint32_t addr, uint32_t size, void *dest)
 }
 
 
-
 void vs_free(Mem_T *mem, uint32_t addr)
 {
-    // have to update the free list 
     printf("Freeing the memory segment with id %u\n", addr);
-    (void)mem;
-    (void)addr;
 
-    // TODO: put this back in
-    // free_segment(mem, addr);
+    // Update the free list
+    free_segment(mem, addr);
     return;
 }
 
@@ -174,7 +184,7 @@ void vs_free(Mem_T *mem, uint32_t addr)
  * If we make the segment daemon concurrent, will it be able to zero memory 
  * segments for us before we need them? This could be a really hard problem.
  * We may not get to this on saturday */
-void init_segment_daemon(void)
-{
-    return;
-}
+// void init_segment_daemon(void)
+// {
+//     return;
+// }

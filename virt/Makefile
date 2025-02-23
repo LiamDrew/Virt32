@@ -19,8 +19,8 @@ test_stack: stack_test.o stack.o
 test_recycler: recycler_test.o recycler.o stack.o mem_state.o driver.o
 	$(CC) $(CFLAGS) -o test_recycler recycler_test.o recycler.o stack.o mem_state.o driver.o
 
-test_mem: mem_test.o driver.o mem_state.o
-	$(CC) $(CFLAGS) -o test_mem mem_test.o driver.o mem_state.o
+test_mem: mem_test.o driver.o mem_state.o recycler.o stack.o
+	$(CC) $(CFLAGS) -o test_mem mem_test.o driver.o mem_state.o recycler.o stack.o
 
 mem_test.o: mem_test.c
 	$(CC) $(CFLAGS) -c mem_test.c
