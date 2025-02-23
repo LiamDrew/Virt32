@@ -21,9 +21,6 @@
 /* This allows us to keep memory state private to the driver module */
 static Mem_T *mem_state = NULL;
 
-/* Convert address is private to this module */
-void *convert_address(Mem_T *mem, uint32_t addr);
-
 Mem_T* init_memory_system(uint32_t kernel_size)
 {    
     /* Safely initialize the memory state */
@@ -44,8 +41,8 @@ Mem_T* init_memory_system(uint32_t kernel_size)
     mem_state->usable_mem = (void*)((char*)mem + BOOK_SIZE);
     mem_state->recycler = recycler_init();
 
-    printf("Start of mem: %p\n", mem_state->mem);
-    printf("Start of usable mem: %p\n", mem_state->usable_mem);
+    // printf("Start of mem: %p\n", mem_state->mem);
+    // printf("Start of usable mem: %p\n", mem_state->usable_mem);
 
     mem_state->kernel_virtual_size = kernel_size;
     mem_state->begin_unused = kernel_size;
@@ -55,7 +52,7 @@ Mem_T* init_memory_system(uint32_t kernel_size)
 
 uint32_t kern_recalloc(Mem_T *mem, uint32_t size)
 {
-    printf("Trying to alloc kernel memory\n");
+    // printf("Trying to alloc kernel memory\n");
     // Assert that the kernel has enough protected space for us to use
     assert(mem->kernel_virtual_size >= size);
 
@@ -71,7 +68,7 @@ uint32_t kern_recalloc(Mem_T *mem, uint32_t size)
     // zero out all the bytes the user wants
     memset(mem->usable_mem, 0, size);
 
-    printf("Successfully allocated kernel memory\n");
+    // printf("Successfully allocated kernel memory\n");
 
     return 0;
 }
@@ -114,7 +111,6 @@ uint32_t vs_malloc(Mem_T *mem, uint32_t size)
     uint32_t num_blocks = get_idx_from_alloc_size(size) + 1;
     uint32_t user_cap = (num_blocks * BLOCK_SIZE) - BOOK_SIZE;
 
-    // printf("user_cap: %d\n", user_cap);
     // printf("size: %ld\n", GB4 - (user_start + BOOK_SIZE));
     /* add 8 to user start to account for initial bookkeeping, needed for GB4 */
     assert((GB4 - (user_start + BOOK_SIZE)) >= user_cap);
@@ -129,17 +125,21 @@ uint32_t vs_malloc(Mem_T *mem, uint32_t size)
     user_addr[-2] = user_cap;
     user_addr[-1] = size;
 
+    // printf("This is start addr: %d\n", user_start);
+
+    // uint32_t *phys = convert_address(mem, user_start);
+    
+    // printf("This is bk_addr %d\n", bk_addr);  
+    // int seg_cap = phys[-2];
+
+    // printf("This is seg_cap after init %d\n", seg_cap);
+
+    // int seg_cap = phys[65536];
+    
+    // printf("This is seg_cap right after init %d\n", seg_cap);
+
     // Add 8 bytes to the client-facing address (to skip over our bookkeeping)
     return user_start;
-}
-
-// NOTE: this function is intended to be private to this module. We don't want
-// clients accessing 64 bit addresses
-inline void *convert_address(Mem_T *mem, uint32_t addr)
-{
-    void *seg = mem->usable_mem;
-    void *ptr = ((char *)seg + addr);
-    return ptr;
 }
 
 uint32_t vs_calloc(Mem_T *mem, uint32_t size){
@@ -236,7 +236,7 @@ uint32_t safe_get_at(Mem_T *mem, uint32_t base, uint32_t offset)
 
 void vs_free(Mem_T *mem, uint32_t addr)
 {
-    printf("Freeing the memory segment with id %u\n", addr);
+    // printf("Freeing the memory segment with id %u\n", addr);
 
     // Update the free list
     free_segment(mem, addr);

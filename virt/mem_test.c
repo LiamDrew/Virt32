@@ -29,14 +29,15 @@ int main(int argc, char **argv)
 
     // vs_malloc
     uint32_t mal_size = 100;
-    uint32_t first_malloc_result = vs_malloc(mem, mal_size);
+    (void)mal_size;
+    // uint32_t first_malloc_result = vs_malloc(mem, mal_size);
 
     // uint32_t res2 = vs_malloc(mem, 25);
 
-    printf("Address of first malloc %u\n", first_malloc_result - kernel_size);
+    // printf("Address of first malloc %u\n", first_malloc_result - kernel_size);
     // printf("Address of second malloc %u\n", res2 - kernel_size);
 
-    vs_free(mem, first_malloc_result - kernel_size);
+    // vs_free(mem, first_malloc_result);
 
     /* Testing vs_malloc when freed segments are available */
     // uint32_t malloc_result1 = vs_malloc(mem, 25);
@@ -47,11 +48,16 @@ int main(int argc, char **argv)
     /* Testing vs_malloc when allocating entire memory */
     // uint32_t malloc_result2 = vs_malloc(mem, available_capacity);
     // printf("Address of fourth malloc %u\n", malloc_result2 - kernel_size);
-    // assert((malloc_result2 - kernel_size) == 0);
+    // assert((malloc_result2) == 0);
 
     // vs_free(mem, malloc_result1);
     // vs_free(mem, res2);
 
     // malloc_result2 = vs_malloc(mem, 2147483648);
     // printf("Address of fourth malloc %u\n", malloc_result2);
+
+    uint32_t three_gigs = 1048576;
+    uint32_t fourth_malloc_result = vs_malloc(mem, three_gigs);
+    printf("Address of fifth malloc %u\n", fourth_malloc_result);
+    
 }

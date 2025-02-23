@@ -8,3 +8,11 @@ uint32_t get_idx_from_alloc_size(uint32_t size)
     return num_blocks;
 }
 
+// NOTE: this function is intended to be private to this module. We don't want
+// clients accessing 64 bit addresses
+inline void *convert_address(Mem_T *mem, uint32_t addr)
+{
+    void *seg = mem->usable_mem;
+    void *ptr = ((char *)seg + addr);
+    return ptr;
+}
