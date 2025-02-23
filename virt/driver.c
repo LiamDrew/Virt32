@@ -53,22 +53,24 @@ Mem_T* init_memory_system(uint32_t kernel_size)
 
 // Liam will do these two functions. They will be much more straightforward
 // than the general case virtual allocation
-
-// uint32_t kern_overwrite();
-
-// TODO: Liam
-void *kern_malloc(uint32_t size)
+uint32_t kern_recalloc(Mem_T *mem, uint32_t size)
 {
-    (void)size;
-    return NULL;
-}
+    // Assert that the kernel has enough protected space for us to use
+    assert(mem->kernel_virtual_size >= size);
 
-// TODO: Liam
-void *kern_realloc(uint32_t size, void *addr)
-{
-    assert(addr == 0);
-    (void)size;
-    return NULL;
+    void *void_mem_start = mem->mem;
+    uint32_t *mem_start = (uint32_t*)void_mem_start;
+
+    // This is redundant but I will keep it in for clarity
+    *mem_start = mem->kernel_virtual_size;
+    mem_start++;
+    // give the user the size that they requested
+    *mem_start = size;
+
+    // zero out all the bytes the user wants
+    memcpy(mem->usable_mem, 0, size);
+
+    return 0;
 }
 
 uint32_t vs_malloc(Mem_T *mem, uint32_t size)
@@ -89,8 +91,9 @@ uint32_t vs_malloc(Mem_T *mem, uint32_t size)
     uint32_t begin_open = mem->begin_unused;
     printf("The start of the unused memory is %u\n", begin_open);
     
-    // find number of 32 byte blocks need to support the allocation request
-    uint32_t num_blocks = get_blocks_from_alloc_size(size);
+    /* Adding 1 to the idx to get the number of blocks the alloc needs
+     * find number of 32 byte blocks need to support the allocation request */
+    uint32_t num_blocks = get_idx_from_alloc_size(size) + 1;
     uint32_t capac = 32 * num_blocks;
 
     // update the beginning of the unused heap
@@ -183,21 +186,15 @@ uint32_t get_at(Mem_T *mem, uint32_t base, uint32_t offset)
 
 void safe_set_at(Mem_T *mem, uint32_t base, uint32_t offset, uint32_t value)
 {
-    
     // check base is a valid base
     assert(!((base - 8) % 32));
 
-    //uint32_t spot_to_access = base + offset;
-    //uint32_t *ptr = convert_address
-    //
-
     // bounds checking: ensure user accesses memory they have permissions on
-    // makes sure address provided is not located in kernel and will not
-    // go past bookkeeping of first malloc/calloc
-    
-    
-    
-    // convert_address
+    uint32_t spot_to_access = base + offset;
+    // uint32_t *ptr_to_spot = convert_address(base, offset);
+    uint32_t *ptr_to_spot = convert_address(mem, spot_to_access);
+    uint32_t size = ptr_to_spot[-(offset + 1)];
+    assert(offset < size);
     
     // call set at
     set_at(mem, base, offset, value);
@@ -205,7 +202,15 @@ void safe_set_at(Mem_T *mem, uint32_t base, uint32_t offset, uint32_t value)
 
 uint32_t safe_get_at(Mem_T *mem, uint32_t base, uint32_t offset)
 {
-    // bounds checking
+    // check base is a valid base
+    assert(!((base - 8) % 32));
+
+    // bounds checking: ensure user accesses memory they have permissions on
+    uint32_t spot_to_access = base + offset;
+    // uint32_t *ptr_to_spot = convert_address(base, offset);
+    uint32_t *ptr_to_spot = convert_address(mem, spot_to_access);
+    uint32_t size = ptr_to_spot[-(offset + 1)];
+    assert(offset < size);
 
     // call get at
     return get_at(mem, base, offset);

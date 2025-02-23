@@ -14,6 +14,6 @@ typedef struct Mem_T {
     uint32_t begin_unused;
 } Mem_T;
 
-uint32_t get_blocks_from_alloc_size(uint32_t size);
+uint32_t get_idx_from_alloc_size(uint32_t size);
 
 #endif

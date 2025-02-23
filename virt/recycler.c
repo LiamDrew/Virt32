@@ -20,7 +20,7 @@ void* recycler_init(void)
 uint32_t find_freed_segment(Mem_T *mem, uint32_t size)
 {
     printf("Size here is %u\n", size);
-    uint32_t index = get_blocks_from_alloc_size(size) - 1;
+    uint32_t index = get_idx_from_alloc_size(size);
     printf("This is index %d\n", index);
     Stack* s = &((Stack*)mem->recycler)[index];
 
@@ -56,7 +56,7 @@ void free_segment(Mem_T *mem, uint32_t seg_addr)
     
     printf("This is seg_cap %d\n", seg_cap);
 
-    int index = get_blocks_from_alloc_size(seg_cap) - 1;
+    int index = get_idx_from_alloc_size(seg_cap);
     printf("index: %d\n", index);
     stack_push(&((Stack*)(mem->recycler))[index], seg_addr);
     if (!stack_is_empty(&((Stack*)(mem->recycler))[6])) {

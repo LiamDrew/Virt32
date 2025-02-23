@@ -10,9 +10,9 @@ int main(int argc, char **argv)
     (void)argv;
 
     /* Testing block allocation size function */
-    uint32_t a1 = get_blocks_from_alloc_size(23);
-    uint32_t a2 = get_blocks_from_alloc_size(24);
-    uint32_t a3 = get_blocks_from_alloc_size(25);
+    uint32_t a1 = get_idx_from_alloc_size(23) + 1;
+    uint32_t a2 = get_idx_from_alloc_size(24) + 1;
+    uint32_t a3 = get_idx_from_alloc_size(25) + 1;
 
     assert(a1 == 1);
     assert(a2 == 1);
