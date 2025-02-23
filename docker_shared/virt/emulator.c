@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
 
     // TODO: free memory system
 
-    printf("\nExiting UM\n");
+    // printf("\nExiting UM\n");
     
     return EXIT_SUCCESS;
 }
