@@ -1,7 +1,7 @@
 #include "stack.h"
 #include <assert.h>
 
-Stack* stack_init(uint32_t size) 
+Stack* stack_init(uint32_t size)
 {
     Stack* s = malloc(sizeof(Stack));
     s->stack = malloc(size * sizeof(uint32_t));

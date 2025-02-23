@@ -14,6 +14,8 @@ void* recycler_init(void)
     return recycler;
 }
 
+
+//TODO: revert to beg_unused if no stack opt. exists
 uint32_t find_freed_segment(Mem_T *mem, uint32_t size)
 {
     int index = size; /* TODO: get log2 of size */

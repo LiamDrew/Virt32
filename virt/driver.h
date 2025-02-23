@@ -34,9 +34,11 @@ uint32_t vs_malloc(Mem_T *mem, uint32_t size);
 
 // /* Virtual segment calloc (vs_calloc): Same thing as vs_malloc, but zero all
 //  * the memory needed ahead of time */
-// void *vs_calloc(uint32_t size);
+uint32_t vs_calloc(Mem_T *mem, uint32_t size);
 
-void *convert_address(Mem_T *mem, uint32_t addr);
+void set_at(Mem_T *mem, uint32_t addr, uint32_t size, void *src);
+
+void get_at(Mem_T *mem, uint32_t addr, uint32_t size, void *dest);
 
 /* Virtual segment free (vs_free): Free a virtual segment for future use. */
 void vs_free(Mem_T *mem, uint32_t addr);

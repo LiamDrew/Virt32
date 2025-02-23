@@ -1,6 +1,7 @@
 #include "mem_state.h"
 #include <stdio.h>
 
+
 uint32_t get_blocks_from_alloc_size(uint32_t size)
 {
     // Will allocate 1 block when it gets an exact fit

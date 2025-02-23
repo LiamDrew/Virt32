@@ -6,7 +6,7 @@
 #define BOOK_SIZE 8
 #define MIN_SEG_SIZE 32
 
-typedef struct {
+typedef struct Mem_T {
     void *mem;              // pointer to the beggining of a 4GB memory segment
     void *recycler;         // data structure holding the free segment tags/sizes
     uint32_t kernel_size;   // kernel_size 
