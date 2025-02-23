@@ -115,7 +115,7 @@ uint32_t vs_malloc(Mem_T *mem, uint32_t size)
     uint32_t user_cap = (num_blocks * BLOCK_SIZE) - BOOK_SIZE;
 
     /* add 8 to user start to account for initial bookkeeping, needed for GB4 */
-    assert(GB4 - (user_start + BOOK_SIZE) <= user_cap);
+    assert(GB4 - (user_start + BOOK_SIZE) >= user_cap);
 
     // update the beginning of the unused heap
     mem->begin_unused = user_start + user_cap;

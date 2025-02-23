@@ -4,7 +4,10 @@
 # which does all it's low level stuff with the LLVM toolchain.
 
 CC = clang
-CFLAGS = -Wall -Wextra -Werror -Wpedantic # we can optimize later
+CFLAGS = -Wall -Wextra -Werror -Wpedantic -O2
+
+um: emulator.o driver.o recycler.o mem_state.o stack.o
+	$(CC) $(CFLAGS) -o um emulator.o driver.o recycler.o mem_state.o stack.o
 
 all: virt test
 
@@ -21,6 +24,9 @@ test_recycler: recycler_test.o recycler.o stack.o mem_state.o driver.o
 
 test_mem: mem_test.o driver.o mem_state.o recycler.o stack.o
 	$(CC) $(CFLAGS) -o test_mem mem_test.o driver.o mem_state.o recycler.o stack.o
+
+emulator.o: emulator.c
+	$(CC) $(CFLAGS) -c emulator.c
 
 mem_test.o: mem_test.c
 	$(CC) $(CFLAGS) -c mem_test.c
