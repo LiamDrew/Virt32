@@ -76,12 +76,12 @@ uint32_t vs_malloc(Mem_T *mem, uint32_t size)
     /* Look for segments to be recycled. If there are freed segments that are
      * ready to be recycled, recycled them */
 
-    // uint32_t temp = find_freed_segment(mem, size);
+    uint32_t freed_seg = find_freed_segment(mem, size);
 
-    // if (temp != 0) {
+    if (freed_seg != 0) {
         // update capacity, size, and usable beginner address for client
-        // return temp
-    // }
+        return freed_seg;
+    }
 
     // If there are no segments to be recycled, carve a fresh one from the heap
 
@@ -97,13 +97,16 @@ uint32_t vs_malloc(Mem_T *mem, uint32_t size)
     mem->begin_unused = begin_open + capac;
 
     // get the beginning of usable physical memory
+    uint32_t *phys = (uint32_t*)mem->usable_mem;
+    (void)phys;
 
-    void *void_start_addr = ((char*)mem->usable_mem + begin_open);
-    uint32_t *start_addr = void_start_addr;
+    char *start_addr = (char*)mem->usable_mem + begin_open;
+    (void)start_addr;
     
-    *start_addr = capac;
-    start_addr++;
-    *start_addr = size;
+    // printf("Start addr is %p\n", (void*)start_addr);
+
+    phys[begin_open] = capac;
+    phys[begin_open + 1] = size;
 
     // Add 8 bytes to the client-facing address (to skip over our bookkeeping)
     return begin_open + BOOK_SIZE;
