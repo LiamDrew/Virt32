@@ -66,7 +66,7 @@ void free_segment(Mem_T *mem, uint32_t seg_addr)
     
     printf("This is seg_cap %d\n", seg_cap);
 
-    int index = ((seg_cap + 8) / 32) - 1;
+    int index = ((seg_cap + 8) / 32);
     printf("index: %d\n", index);
     stack_push(&((Stack*)(mem->recycler))[index], seg_addr);
     if (!stack_is_empty(&((Stack*)(mem->recycler))[3])) {

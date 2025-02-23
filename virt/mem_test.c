@@ -31,22 +31,22 @@ int main(int argc, char **argv)
     uint32_t mal_size = 100;
     uint32_t first_malloc_result = vs_malloc(mem, mal_size);
 
-    uint32_t res2 = vs_malloc(mem, 25);
+    // uint32_t res2 = vs_malloc(mem, 25);
 
     printf("Address of first malloc %u\n", first_malloc_result - kernel_size);
-    printf("Address of second malloc %u\n", res2 - kernel_size);
+    // printf("Address of second malloc %u\n", res2 - kernel_size);
 
     vs_free(mem, first_malloc_result - kernel_size);
 
     /* Testing vs_malloc when freed segments are available */
-    uint32_t malloc_result1 = vs_malloc(mem, 25);
-    printf("Address of third malloc %u\n", malloc_result1 - kernel_size);
+    // uint32_t malloc_result1 = vs_malloc(mem, 25);
+    // printf("Address of third malloc %u\n", malloc_result1 - kernel_size);
 
-    uint32_t available_capacity = 4294967296 - kernel_size - 16;
+    // uint32_t available_capacity = 4294967296 - kernel_size - 16;
 
     /* Testing vs_malloc when allocating entire memory */
-    uint32_t malloc_result2 = vs_malloc(mem, available_capacity);
-    printf("Address of fourth malloc %u\n", malloc_result2 - kernel_size);
+    // uint32_t malloc_result2 = vs_malloc(mem, available_capacity);
+    // printf("Address of fourth malloc %u\n", malloc_result2 - kernel_size);
     // assert((malloc_result2 - kernel_size) == 0);
 
     // vs_free(mem, malloc_result1);

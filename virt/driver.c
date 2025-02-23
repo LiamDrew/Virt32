@@ -114,8 +114,10 @@ uint32_t vs_malloc(Mem_T *mem, uint32_t size)
     uint32_t num_blocks = get_idx_from_alloc_size(size) + 1;
     uint32_t user_cap = (num_blocks * BLOCK_SIZE) - BOOK_SIZE;
 
+    // printf("user_cap: %d\n", user_cap);
+    // printf("size: %ld\n", GB4 - (user_start + BOOK_SIZE));
     /* add 8 to user start to account for initial bookkeeping, needed for GB4 */
-    assert(GB4 - (user_start + BOOK_SIZE) <= user_cap);
+    assert((GB4 - (user_start + BOOK_SIZE)) >= user_cap);
 
     // update the beginning of the unused heap
     mem->begin_unused = user_start + user_cap;
