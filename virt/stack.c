@@ -11,6 +11,11 @@ Stack* stack_init(uint32_t size)
     return s;
 }
 
+uint32_t stack_top(Stack *s)
+{
+    return s->stack[s->size - 1];
+}
+
 void stack_push(Stack *s, uint32_t elem)
 {
     assert(s != NULL);
@@ -41,9 +46,9 @@ uint32_t stack_pop(Stack* s)
     return top;
 }
 
-int stack_is_empty(Stack* s)
+bool stack_is_empty(Stack* s)
 {
-    return (s->size == 0)? -1 : s->size;
+    return s->size == 0;
 }
 
 void stack_free(Stack* s)
