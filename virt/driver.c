@@ -86,11 +86,8 @@ void kern_memcpy(Mem_T *mem, uint32_t src_addr, uint32_t dest_addr, uint32_t cop
     void *real_src = convert_address(mem, src_addr);
     void *real_dest = convert_address(mem, dest_addr);
 
-    (void)real_src;
-    (void)real_dest;
-    (void)copy_size;
+    memcpy(real_dest, real_src, copy_size);
 }
-
 
 uint32_t vs_malloc(Mem_T *mem, uint32_t size)
 {
@@ -98,7 +95,7 @@ uint32_t vs_malloc(Mem_T *mem, uint32_t size)
      * ready to be recycled, recycled them */
     uint32_t freed_seg = find_freed_segment(mem, size);
 
-     
+     /* check that a free segment is available */
     if (freed_seg) {
         // update capacity, size, and usable beginner address for client
         uint32_t *freed_seg_addr = convert_address(mem, freed_seg);
@@ -106,8 +103,8 @@ uint32_t vs_malloc(Mem_T *mem, uint32_t size)
         return freed_seg;
     }
     
-    // If there are no segments to be recycled, carve a fresh one from the heap
-
+    /* If no segments can be recycled, carve a fresh one from the heap */
+    
     // beginning virtual
     uint32_t user_start = mem->begin_unused + BOOK_SIZE;
     // printf("The start of the unused memory is %u\n", begin_open);
@@ -116,6 +113,8 @@ uint32_t vs_malloc(Mem_T *mem, uint32_t size)
      * find number of 32 byte blocks need to support the allocation request */
     uint32_t num_blocks = get_idx_from_alloc_size(size) + 1;
     uint32_t user_cap = (num_blocks * BLOCK_SIZE) - BOOK_SIZE;
+
+    assert(GB4 - user_start <= user_cap);
 
     // update the beginning of the unused heap
     mem->begin_unused = user_start + user_cap;
@@ -203,7 +202,7 @@ uint32_t get_at(Mem_T *mem, uint32_t base, uint32_t offset)
 void safe_set_at(Mem_T *mem, uint32_t base, uint32_t offset, uint32_t value)
 {
     // check base is a valid base
-    assert(!((base - 8) % 32));
+    assert(!(base % 32));
 
     // bounds checking: ensure user accesses memory they have permissions on
     uint32_t spot_to_access = base + offset;
@@ -219,7 +218,7 @@ void safe_set_at(Mem_T *mem, uint32_t base, uint32_t offset, uint32_t value)
 uint32_t safe_get_at(Mem_T *mem, uint32_t base, uint32_t offset)
 {
     // check base is a valid base
-    assert(!((base - 8) % 32));
+    assert(!(base % 32));
 
     // bounds checking: ensure user accesses memory they have permissions on
     uint32_t spot_to_access = base + offset;
