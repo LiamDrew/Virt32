@@ -8,7 +8,7 @@ CFLAGS = -Wall -Wextra -Werror -Wpedantic # we can optimize later
 
 all: virt test
 
-test: test_stack test_recycler
+test: test_stack test_recycler test_mem
 
 virt: main.o driver.o recycler.o mem_state.o stack.o
 	$(CC) $(CFLAGS) -o virt main.o driver.o recycler.o mem_state.o stack.o
@@ -18,6 +18,12 @@ test_stack: stack_test.o stack.o
 
 test_recycler: recycler_test.o recycler.o stack.o mem_state.o driver.o
 	$(CC) $(CFLAGS) -o test_recycler recycler_test.o recycler.o stack.o mem_state.o driver.o
+
+test_mem: mem_test.o driver.o mem_state.o
+	$(CC) $(CFLAGS) -o test_mem mem_test.o driver.o mem_state.o
+
+mem_test.o: mem_test.c
+	$(CC) $(CFLAGS) -c mem_test.c
 
 main.o: main.c
 	$(CC) $(CFLAGS) -c main.c
@@ -38,7 +44,7 @@ mem_state.o: mem_state.c
 	$(CC) $(CFLAGS) -c mem_state.c
 
 clean:
-	rm -f *.o virt test_stack test_recycler
+	rm -f *.o virt test_stack test_recycler test_mem
 
 testall:
 	./test_stack 
