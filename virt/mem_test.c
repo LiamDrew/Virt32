@@ -32,5 +32,21 @@ int main(int argc, char **argv)
     printf("Address of second malloc %u\n", res2);
 
     vs_free(mem, first_malloc_result);
-    
+
+    /* Testing vs_malloc when freed segments are available */
+    uint32_t malloc_result1 = vs_malloc(mem, 25);
+    printf("Address of third malloc %u\n", malloc_result1);
+
+
+    /* Testing vs_malloc when allocating entire memory */
+    uint32_t malloc_result2 = vs_malloc(mem, 33554432);
+    printf("Address of fourth malloc %u\n", malloc_result2);
+
+    // uint32_t = 4294967296 - 2^16 - 16
+
+    vs_free(mem, malloc_result1);
+    vs_free(mem, res2);
+
+    // malloc_result2 = vs_malloc(mem, 2147483648);
+    // printf("Address of fourth malloc %u\n", malloc_result2);
 }
