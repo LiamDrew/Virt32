@@ -51,15 +51,6 @@ Mem_T* init_memory_system(uint32_t kernel_size)
     return mem_state;
 }
 
-// NOTE: this function is intended to be private to this module. We don't want
-// clients accessing 64 bit addresses
-inline void *convert_address(Mem_T *mem, uint32_t addr)
-{
-    void *seg = mem->mem;
-    void *ptr = ((char *)seg + addr);
-    return ptr;
-}
-
 // Liam will do these two functions. They will be much more straightforward
 // than the general case virtual allocation
 
@@ -106,19 +97,25 @@ uint32_t vs_malloc(Mem_T *mem, uint32_t size)
     mem->begin_unused = begin_open + capac;
 
     // get the beginning of usable physical memory
-    uint32_t *phys = (uint32_t*)mem->usable_mem;
-    (void)phys;
 
-    char *start_addr = (char*)mem->usable_mem + begin_open;
-    (void)start_addr;
+    void *void_start_addr = ((char*)mem->usable_mem + begin_open);
+    uint32_t *start_addr = void_start_addr;
     
-    // printf("Start addr is %p\n", (void*)start_addr);
-
-    phys[begin_open] = capac;
-    phys[begin_open + 1] = size;
+    *start_addr = capac;
+    start_addr++;
+    *start_addr = size;
 
     // Add 8 bytes to the client-facing address (to skip over our bookkeeping)
-    return begin_open + 8;
+    return begin_open + BOOK_SIZE;
+}
+
+// NOTE: this function is intended to be private to this module. We don't want
+// clients accessing 64 bit addresses
+inline void *convert_address(Mem_T *mem, uint32_t addr)
+{
+    void *seg = mem->usable_mem;
+    void *ptr = ((char *)seg + addr);
+    return ptr;
 }
 
 uint32_t vs_calloc(Mem_T *mem, uint32_t size){
@@ -130,6 +127,9 @@ uint32_t vs_calloc(Mem_T *mem, uint32_t size){
      * this step when we (the engineers) may be able to do it better behind the
      * scenes. Follow the KISS principle: get the interface right, fix the
      * implementation later.
+     * 
+     * There is certainly a more efficient way to do this. We will optimize
+     * this later.
      */
 
     // do the malloc in the first place
@@ -148,30 +148,60 @@ uint32_t vs_calloc(Mem_T *mem, uint32_t size){
 // These will call the dangerous ones, which we will eventually want to make
 // the program fly
 
-// void safe_set_at
+/*
+ * Important design choice: since we are pretending to be the "kernel", but we
+ * don't have the privilege of the real kernel, we are somewhat limited in
+ * our ability to provide a really nice intuitive interface to our memory system
+ * One thing we considered was using memcpy to allow the client to set an
+ * arbitrary amout of memory (with bounds checking), but that requires a system
+ * call to memcpy for every single memory access, which is unacceptably slow.
+ *
+ * Since this is a hackathon, we are making the restricting assumption that all
+ * memory accesses will be 4 bytes so that our system can be used in the UM.
+ * A complete virtual memory system would have to provide a better interface
+ * than this, but it will do for our purposes.
+ */
 
-// void safe_get_at
-
-
-// TODO: these could be made UM specific
-void set_at(Mem_T *mem, uint32_t addr, uint32_t size, void *src)
+void set_at(Mem_T *mem, uint32_t base, uint32_t offset, uint32_t value)
 {
-    // check bounds
-    (void)mem;
-    (void)addr;
-    (void)size;
-    (void)src;
+    // convert v^2 address to virtual address
+    uint32_t *dest = (uint32_t*) convert_address(mem, base + offset);
+    *dest = value;
 }
 
-void get_at(Mem_T *mem, uint32_t addr, uint32_t size, void *dest)
+uint32_t get_at(Mem_T *mem, uint32_t base, uint32_t offset)
 {
-    // check bounds
-    (void)mem;
-    (void)addr;
-    (void)size;
-    (void)dest;
+    // convert v^2 address to virtual address
+    uint32_t *src = (uint32_t*) convert_address(mem, base + offset);
+    return *src;
+
 }
 
+
+void safe_set_at(Mem_T *mem, uint32_t base, uint32_t offset, uint32_t value)
+{
+    // uint32_t spot_to_access = base + offset;
+    // check base is a valid base
+    assert(!((base - 8) % 32));
+    
+    // bounds checking: ensure user accesses memory they have permissions on
+    // makes sure address provided is not located in kernel and will not
+    // go past bookkeeping of first malloc/calloc
+    
+    
+    // convert_address
+    
+    // call set at
+    set_at(mem, base, offset, value);
+}
+
+uint32_t safe_get_at(Mem_T *mem, uint32_t base, uint32_t offset)
+{
+    // bounds checking
+
+    // call get at
+    return get_at(mem, base, offset);
+}
 
 void vs_free(Mem_T *mem, uint32_t addr)
 {
