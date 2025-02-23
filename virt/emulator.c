@@ -47,13 +47,14 @@ uint32_t *initialize_memory(FILE *fp, size_t fsize, Mem_T *mem);
 uint64_t assemble_word(uint64_t word, unsigned width, unsigned lsb,
                        uint64_t value);
 
-void handle_instructions(uint32_t *zero);
+void handle_instructions(uint32_t *zero, Mem_T *mem);
 void handle_stop(void);
 static inline bool exec_instr(Instruction word, Instruction **pp,
-                              uint32_t *regs, uint32_t *zero);
-uint32_t map_segment(uint32_t size);
-void unmap_segment(uint32_t segment);
-void load_segment(uint32_t index, uint32_t *zero);
+                              uint32_t *regs, uint32_t *zero, Mem_T *mem, uint32_t *pc);
+
+uint32_t map_segment(uint32_t size, Mem_T *mem);
+void unmap_segment(uint32_t segment, Mem_T *mem);
+void load_segment(uint32_t index, uint32_t *zero, Mem_T *mem);
 
 int main(int argc, char *argv[])
 {
@@ -82,10 +83,13 @@ int main(int argc, char *argv[])
     (void)mem;
 
     uint32_t *zero_segment = initialize_memory(fp, fsize + sizeof(Instruction), mem);
-    handle_instructions(zero_segment);
+    // printf("\n\nIn between init and use\n\n");
+    handle_instructions(zero_segment, mem);
 
     // TODO: free memory system
 
+    printf("\nExiting UM\n");
+    
     return EXIT_SUCCESS;
 }
 
@@ -122,10 +126,25 @@ uint32_t *initialize_memory(FILE *fp, size_t fsize, Mem_T *mem)
         else if (i % 4 == 3)
         {
             word = assemble_word(word, 8, 0, c_char);
+            
+            // doing both for now
             zero[i / 4] = word;
 
+            // uint32_t opcode = word >> 28;
+
+            // printf("Storing word at segment 0 at index %lu with opcode: %u\n", (i / 4) * sizeof(uint32_t), opcode);
+
             // storing in the zero segment here
+            set_at(mem, 0, (i / 4) * sizeof(uint32_t), word);
             // use set at
+
+            // uint32_t temp_word = get_at(mem, 0, (i / 4) * sizeof(uint32_t));
+
+            // uint32_t temp_opcode = temp_word >> 28;
+
+            // printf("Getting word at segment 0 at index %lu with opcode: %u\n", (i / 4) * sizeof(uint32_t), temp_opcode);
+
+            // assert(temp_word == word);
             word = 0;
         }
         i++;
@@ -154,30 +173,40 @@ uint64_t assemble_word(uint64_t word, unsigned width, unsigned lsb,
     return return_word;
 }
 
-void handle_instructions(uint32_t *zero)
+void handle_instructions(uint32_t *zero, Mem_T *mem)
 {
     uint32_t regs[NUM_REGISTERS] = {0};
-    Instruction *pp = zero;
+    uint32_t pc = 0;
+    // Instruction *pp = zero;
+    Instruction *pp = NULL;
     Instruction word;
 
     bool exit = false;
 
     while (!exit)
     {
-        word = *pp;
-        pp++;
-        exit = exec_instr(word, &pp, regs, zero);
+        word = get_at(mem, 0, pc * sizeof(uint32_t));
+        // uint32_t opcode = word >> 28;
+        // printf("Getting word at segment 0 at index %u and opcode is %u\n", pc, opcode);
+        pc++;
+        // word = *pp;
+        // exit = exec_instr(word, &pp, regs, zero, mem);
+        exit = exec_instr(word, &pp, regs, zero, mem, &pc);
     }
 
     handle_stop();
 }
 
 static inline bool exec_instr(Instruction word, Instruction **pp,
-                              uint32_t *regs, uint32_t *zero)
+                              uint32_t *regs, uint32_t *zero, Mem_T *mem, uint32_t *pc)
 {
+    (void)pp;
+    (void)mem;
     (void)zero;
     uint32_t a = 0, b = 0, c = 0, val = 0;
     uint32_t opcode = word >> 28;
+
+    // printf("Opcode is %u\n", opcode);
 
     /* Load Value */
     if (__builtin_expect(opcode == 13, 1))
@@ -199,13 +228,19 @@ static inline bool exec_instr(Instruction word, Instruction **pp,
     /* Segmented Load */
     if (__builtin_expect(opcode == 1, 1))
     {
-        regs[a] = segment_sequence[regs[b]][regs[c]];
+        // printf("Doing a SEG LOAD...");
+        regs[a] = get_at(mem, regs[b], regs[c] * sizeof(uint32_t));
+        // printf("Done with load\n");
+        // regs[a] = segment_sequence[regs[b]][regs[c]];
     }
 
     /* Segmented Store */
     else if (__builtin_expect(opcode == 2, 1))
     {
-        segment_sequence[regs[a]][regs[b]] = regs[c];
+        // printf("Doing a SEG STORE...");
+        set_at(mem, regs[a], regs[b] * sizeof(uint32_t), regs[c]);
+        // printf("Done with store\n");
+        // segment_sequence[regs[a]][regs[b]] = regs[c];
     }
 
 
@@ -223,8 +258,11 @@ static inline bool exec_instr(Instruction word, Instruction **pp,
     /* Load Segment */
     else if (__builtin_expect(opcode == 12, 0))
     {
-        load_segment(regs[b], zero);
-        *pp = segment_sequence[0] + regs[c];
+        // printf("Loading segment, regs[c] is: %u\n", regs[c]);
+        load_segment(regs[b], zero, mem);
+        *pc = regs[c]; 
+        // intentionally not multiplying
+        // *pp = segment_sequence[0] + regs[c];
     }
 
     /* Addition */
@@ -240,19 +278,17 @@ static inline bool exec_instr(Instruction word, Instruction **pp,
             regs[a] = regs[b];
     }
 
-
-
     // TODO: These two functions need to change
     /* Map Segment */
     else if (__builtin_expect(opcode == 8, 0))
     {
-        regs[b] = map_segment(regs[c]);
+        regs[b] = map_segment(regs[c], mem);
     }
 
     /* Unmap Segment */
     else if (__builtin_expect(opcode == 9, 0))
     {
-        unmap_segment(regs[c]);
+        unmap_segment(regs[c], mem);
     }
 
     /* Division */
@@ -297,21 +333,66 @@ void handle_stop(void)
     free(recycled_ids);
 }
 
-uint32_t map_segment(uint32_t size)
+uint32_t map_segment(uint32_t size, Mem_T *mem)
 {
     (void)size;
-    return 0;
+    uint32_t addr = vs_calloc(mem, size * sizeof(uint32_t));
+    return addr;
 }
 
-void unmap_segment(uint32_t segment)
+void unmap_segment(uint32_t segment, Mem_T *mem)
 {
+    (void)mem;
     (void)segment;
+    // do nothing for now
 }
 
-void load_segment(uint32_t index, uint32_t *zero)
+void load_segment(uint32_t index, uint32_t *zero, Mem_T *mem)
 {
     (void)index;
     (void)zero;
+    (void)mem;
+
+    // don't bother doing anything for 0 segmetn
+    if (index == 0) {
+        return;
+    }
+
+    assert(false);
+
+    // printf("This is a sandmark thing\n");
+
+    // get the size of the segment
+    void *seg_addr = convert_address(mem, index);
+    // printf("Seg addr is %p\n", seg_addr);
+
+    uint32_t *usable_kern_addr = (uint32_t *)convert_address(mem, 0);
+    
+    // get segment size
+    uint32_t *my_addr = seg_addr;
+    my_addr--;
+    uint32_t copy_size = *my_addr;
+
+    
+
+    // printf("Copying segment of size %u\n", copy_size);
+
+    for (uint32_t i = 0; i < (copy_size / 4); i++) {
+        uint32_t my_temp = my_addr[i];
+        uint32_t temp_opcode = my_temp >> 28;
+        (void)temp_opcode;
+
+        // printf("Getting word at segment 0 at index %u with opcode: %u\n", i, temp_opcode);
+
+        usable_kern_addr[i] = my_addr[i];
+    }
+
+
+    // printf("Actually trying to run load segment\n");
+
+    // printf("making it to the end of memcpy\n");
+    // kern_memcpy(mem, index, 0, 10);
+    // assert(false);
 }
 
 // Old version

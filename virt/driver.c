@@ -22,7 +22,7 @@
 static Mem_T *mem_state = NULL;
 
 /* Convert address is private to this module */
-void *convert_address(Mem_T *mem, uint32_t addr);
+// void *convert_address(Mem_T *mem, uint32_t addr);
 
 Mem_T* init_memory_system(uint32_t kernel_size)
 {    
@@ -44,8 +44,8 @@ Mem_T* init_memory_system(uint32_t kernel_size)
     mem_state->usable_mem = (void*)((char*)mem + BOOK_SIZE);
     mem_state->recycler = recycler_init();
 
-    printf("Start of mem: %p\n", mem_state->mem);
-    printf("Start of usable mem: %p\n", mem_state->usable_mem);
+    // printf("Start of mem: %p\n", mem_state->mem);
+    // printf("Start of usable mem: %p\n", mem_state->usable_mem);
 
     mem_state->kernel_virtual_size = kernel_size;
     mem_state->begin_unused = kernel_size;
@@ -55,7 +55,7 @@ Mem_T* init_memory_system(uint32_t kernel_size)
 
 uint32_t kern_recalloc(Mem_T *mem, uint32_t size)
 {
-    printf("Trying to alloc kernel memory\n");
+    // printf("Trying to alloc kernel memory\n");
     // Assert that the kernel has enough protected space for us to use
     assert(mem->kernel_virtual_size >= size);
 
@@ -71,7 +71,7 @@ uint32_t kern_recalloc(Mem_T *mem, uint32_t size)
     // zero out all the bytes the user wants
     memset(mem->usable_mem, 0, size);
 
-    printf("Successfully allocated kernel memory\n");
+    // printf("Successfully allocated kernel memory\n");
 
     return 0;
 }
@@ -81,18 +81,27 @@ void kern_memcpy(Mem_T *mem, uint32_t src_addr, uint32_t dest_addr, uint32_t cop
 {
     // only allow memcpy from user space to kernel space
     // TODO: build some safety into this
+
+    assert(dest_addr == 0);
     
     // get real source and dest addresses
     void *real_src = convert_address(mem, src_addr);
     void *real_dest = convert_address(mem, dest_addr);
 
-    memcpy(real_dest, real_src, copy_size);
+    printf("real_src is %p: real_src\n", real_src);
+    printf("real_src is %p: real_dest\n", real_dest);
+    printf("Copy size is %u\n", copy_size);
+
+    // memcpy(real_dest, real_src, copy_size);
 }
 
 uint32_t vs_malloc(Mem_T *mem, uint32_t size)
 {
+    /* users may only ask vs_malloc for 1MB of contiguous space, maximum */
+    //assert(((size >> 32) - 8) < (2 << 30))
     /* Look for segments to be recycled. If there are freed segments that are
      * ready to be recycled, recycled them */
+    
     uint32_t freed_seg = find_freed_segment(mem, size);
 
      /* check that a free segment is available */
@@ -113,7 +122,8 @@ uint32_t vs_malloc(Mem_T *mem, uint32_t size)
      * find number of 32 byte blocks need to support the allocation request */
     uint32_t num_blocks = get_idx_from_alloc_size(size) + 1;
     uint32_t user_cap = (num_blocks * BLOCK_SIZE) - BOOK_SIZE;
-
+    
+    /* Check that we still have enough 'carvable' memory in the 4GB segmment */
     /* add 8 to user start to account for initial bookkeeping, needed for GB4 */
     assert(GB4 - (user_start + BOOK_SIZE) >= user_cap);
 
@@ -137,6 +147,8 @@ inline void *convert_address(Mem_T *mem, uint32_t addr)
 {
     void *seg = mem->usable_mem;
     void *ptr = ((char *)seg + addr);
+
+    // printf("Address %u has been converted to pointer %p\n", addr, ptr);
     return ptr;
 }
 
@@ -156,7 +168,7 @@ uint32_t vs_calloc(Mem_T *mem, uint32_t size){
 
     // do the malloc in the first place
     uint32_t addr = vs_malloc(mem, size);
-
+    
     // convert the virtual address to physical
     void *ptr = convert_address(mem, addr);
 

@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define SIZE 27
+#define SIZE 32768
 
 void* recycler_init(void)
 {
@@ -19,9 +19,9 @@ void* recycler_init(void)
 //TODO: revert to beg_unused if no stack opt. exists
 uint32_t find_freed_segment(Mem_T *mem, uint32_t size)
 {
-    printf("Size here is %u\n", size);
+    //printf("Size here is %u\n", size);
     uint32_t index = get_idx_from_alloc_size(size);
-    printf("This is index %d\n", index);
+    //printf("This is index %d\n", index);
     Stack* s = &((Stack*)mem->recycler)[index];
 
     /* if no segment of size 'size', check next power of two */
@@ -60,17 +60,17 @@ void free_segment(Mem_T *mem, uint32_t seg_addr)
     // uint32_t begin_open = mem->begin_unused;
     uint32_t *phys = (uint32_t*)mem->usable_mem;
     
-    printf("This is bk_addr %d\n", bk_addr);
+    //printf("This is bk_addr %d\n", bk_addr);
 
     int seg_cap = phys[65536 + bk_addr];
     
-    printf("This is seg_cap %d\n", seg_cap);
+    //printf("This is seg_cap %d\n", seg_cap);
 
     int index = ((seg_cap + 8) / 32) - 1;
-    printf("index: %d\n", index);
+    //printf("index: %d\n", index);
     stack_push(&((Stack*)(mem->recycler))[index], seg_addr);
     if (!stack_is_empty(&((Stack*)(mem->recycler))[3])) {
-        printf("inserted segment for 128\n");
+        //printf("inserted segment for 128\n");
     }
 }
 

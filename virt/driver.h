@@ -14,6 +14,8 @@
 #include <stdint.h>
 #include "mem_state.h"
 
+void *convert_address(Mem_T *mem, uint32_t addr);
+
 // Initialize the virtual memory system
 Mem_T *init_memory_system(uint32_t kernel_size);
 
@@ -36,7 +38,7 @@ uint32_t vs_malloc(Mem_T *mem, uint32_t size);
 //  * the memory needed ahead of time */
 uint32_t vs_calloc(Mem_T *mem, uint32_t size);
 
-void set_at(Mem_T *mem, uint32_t addr, uint32_t size, uint32_t value);
+void set_at(Mem_T *mem, uint32_t base, uint32_t offset, uint32_t value);
 
 uint32_t get_at(Mem_T *mem, uint32_t base, uint32_t offset);
 
