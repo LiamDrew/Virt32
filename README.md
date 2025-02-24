@@ -22,7 +22,7 @@ Team Member Contributions:
                  free segments to the free list.
 
 ACKNOWLEDGEMENTS
-CS40 Project 6 & 7 - UM 
+CS40 Project 6 & 7 - UM & PROFILING
 
 REFLECTION
 <What motivated your team to choose this project?>
