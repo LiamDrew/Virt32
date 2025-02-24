@@ -4,7 +4,7 @@
 # which does all it's low level stuff with the LLVM toolchain.
 
 CC = clang
-CFLAGS = -Wall -Wextra -Werror -Wpedantic -O2
+CFLAGS = -g -Wall -Wextra -Werror -Wpedantic -O2
 
 um: emulator.o driver.o recycler.o mem_state.o stack.o
 	$(CC) $(CFLAGS) -o um emulator.o driver.o recycler.o mem_state.o stack.o

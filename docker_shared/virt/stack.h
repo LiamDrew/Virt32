@@ -2,6 +2,7 @@
 #define STACK_H
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 typedef struct {
     uint32_t* stack;
