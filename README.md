@@ -26,7 +26,7 @@ CS40 Project 6 & 7 - UM & PROFILING
 
 REFLECTION
 <What motivated your team to choose this project?>
-    Project 6 & 7 in CS40, The Universal Machine (UM), has students design and implement they're own 32-Bit emulator. The project has students use an array of pointers to memory segments to handle the 64-bit to 32-bit memory conversion problem. However, it makes every single UM memory access slow. Every UM memory access requires 2 system memory accesses, which is particularly slow due to the double-pointer situation. This results in terrible spatial locality and a high likelihood of cache misses. So, we asked ourselves, what would happen if we got rid of the double-pointer problem? This led us down a memory rabbit hole with the idea of creating our own virtual memory to break through the inherent bottleneck of UM.
+    Project 6 & 7 in CS40, The Universal Machine (UM), has students design and implement their own 32-Bit emulator. The project has students use an array of pointers to memory segments to handle the 64-bit to 32-bit memory conversion problem. However, it makes every single UM memory access slow. Every UM memory access requires 2 system memory accesses, which is particularly slow due to the double-pointer situation. This results in terrible spatial locality and a high likelihood of cache misses. So, we asked ourselves, what would happen if we got rid of the double-pointer problem? This led us down a memory rabbit hole with the idea of creating our own virtual memory to break through the inherent bottleneck of UM.
 
 <Potential future work/improvements?>
     1. Add more bounds/safety checking
