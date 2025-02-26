@@ -39,3 +39,4 @@ REFLECTION
     On Saturday, our team had a great discussion on our project's design and 
     plan. We discussed ideas about data structures, performance improvements, 
     time-space trade-offs, how we want to incorporate the UM, etc. 
+    
