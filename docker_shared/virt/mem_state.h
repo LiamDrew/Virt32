@@ -15,5 +15,7 @@ typedef struct Mem_T {
 } Mem_T;
 
 uint32_t get_idx_from_alloc_size(uint32_t size);
+/* Convert address is private to this module */
+void *convert_address(Mem_T *mem, uint32_t addr);
 
 #endif

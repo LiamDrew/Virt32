@@ -1,8 +1,9 @@
 #include "recycler.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 
-#define SIZE 32768
+#define SIZE 32769 /* User can allocate at most 1GB */
 
 void* recycler_init(void)
 {
@@ -15,35 +16,15 @@ void* recycler_init(void)
     return recycler;
 }
 
-
-//TODO: revert to beg_unused if no stack opt. exists
 uint32_t find_freed_segment(Mem_T *mem, uint32_t size)
 {
-    //printf("Size here is %u\n", size);
     uint32_t index = get_idx_from_alloc_size(size);
-    //printf("This is index %d\n", index);
+    assert(index < SIZE);
+    
     Stack* s = &((Stack*)mem->recycler)[index];
 
-    /* if no segment of size 'size', check next power of two */
+    /* if no segment of size 'size', check next bucket */
     if (stack_is_empty(s)) {
-        // uint32_t new_idx = (index + 1) % SIZE;
-        // Stack* next_s = &((Stack*)mem->recycler)[new_idx];
-        // // printf("Inside the next index\n");
-
-        // // TODO: Add the functionality of splitting the next segment 
-        // if (stack_is_empty(next_s)) {
-        //     return 0;
-        // }
-
-        // uint32_t segment = stack_pop(next_s);
-        // uint32_t *phys = (uint32_t*)mem->usable_mem;
-        // uint32_t bk_addr = phys[segment - 8];
-        // int seg_cap = phys[65536 + bk_addr];
-        // int seg_size = phys[65536 + bk_addr + 1];
-        // int new_cap = ((seg_cap + 8) / 2) - 8;
-
-        // phys[65536 + bk_addr] = 
-
         return 0;
     }
     
@@ -51,7 +32,7 @@ uint32_t find_freed_segment(Mem_T *mem, uint32_t size)
     return freed_segment;
 }
 
-// Assuming that the seg_addr received is already processed
+/* Assuming that the seg_addr received is already processed */
 void free_segment(Mem_T *mem, uint32_t seg_addr)
 {
     uint32_t bk_addr = seg_addr - 8;
@@ -72,5 +53,12 @@ void free_segment(Mem_T *mem, uint32_t seg_addr)
     if (!stack_is_empty(&((Stack*)(mem->recycler))[3])) {
         //printf("inserted segment for 128\n");
     }
-}
 
+    // I believe these are the new changes, not sure if they will work.
+
+    // uint32_t* phys = convert_address(mem, seg_addr);
+    // int seg_cap = phys[-2];
+    // int index = ((seg_cap + 8) / 32) - 1;
+
+    // stack_push(&((Stack*)(mem->recycler))[index], seg_addr);
+}
