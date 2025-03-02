@@ -136,6 +136,19 @@ uint32_t vs_malloc(Mem_T *mem, uint32_t size)
     user_addr[-2] = user_cap;
     user_addr[-1] = size;
 
+    // printf("This is start addr: %d\n", user_start);
+
+    // uint32_t *phys = convert_address(mem, user_start);
+    
+    // printf("This is bk_addr %d\n", bk_addr);  
+    // int seg_cap = phys[-2];
+
+    // printf("This is seg_cap after init %d\n", seg_cap);
+
+    // int seg_cap = phys[65536];
+    
+    // printf("This is seg_cap right after init %d\n", seg_cap);
+
     // Add 8 bytes to the client-facing address (to skip over our bookkeeping)
     return user_start;
 }
@@ -243,7 +256,7 @@ uint32_t safe_get_at(Mem_T *mem, uint32_t base, uint32_t offset)
 
 void vs_free(Mem_T *mem, uint32_t addr)
 {
-    printf("Freeing the memory segment with id %u\n", addr);
+    // printf("Freeing the memory segment with id %u\n", addr);
 
     // Update the free list
     free_segment(mem, addr);
