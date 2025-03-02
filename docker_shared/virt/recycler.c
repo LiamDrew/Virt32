@@ -35,28 +35,30 @@ uint32_t find_freed_segment(Mem_T *mem, uint32_t size)
 /* Assuming that the seg_addr received is already processed */
 void free_segment(Mem_T *mem, uint32_t seg_addr)
 {
-    // uint32_t bk_addr = seg_addr - 8;
+    uint32_t bk_addr = seg_addr - 8;
 
-    // /* Grab segment size from bookkeeping */
-    // // uint32_t begin_open = mem->begin_unused;
-    // uint32_t *phys = (uint32_t*)mem->usable_mem;
+    /* Grab segment size from bookkeeping */
+    // uint32_t begin_open = mem->begin_unused;
+    uint32_t *phys = (uint32_t*)mem->usable_mem;
     
-    // //printf("This is bk_addr %d\n", bk_addr);
+    //printf("This is bk_addr %d\n", bk_addr);
 
-    // int seg_cap = phys[65536 + bk_addr];
+    int seg_cap = phys[65536 + bk_addr];
     
-    // //printf("This is seg_cap %d\n", seg_cap);
+    //printf("This is seg_cap %d\n", seg_cap);
 
-    // int index = ((seg_cap + 8) / 32) - 1;
-    // //printf("index: %d\n", index);
-    // stack_push(&((Stack*)(mem->recycler))[index], seg_addr);
-    // if (!stack_is_empty(&((Stack*)(mem->recycler))[3])) {
-    //     //printf("inserted segment for 128\n");
-    // }
-}
-    uint32_t* phys = convert_address(mem, seg_addr);
-    int seg_cap = phys[-2];
     int index = ((seg_cap + 8) / 32) - 1;
-
+    //printf("index: %d\n", index);
     stack_push(&((Stack*)(mem->recycler))[index], seg_addr);
+    if (!stack_is_empty(&((Stack*)(mem->recycler))[3])) {
+        //printf("inserted segment for 128\n");
+    }
+
+    // I believe these are the new changes, not sure if they will work.
+
+    // uint32_t* phys = convert_address(mem, seg_addr);
+    // int seg_cap = phys[-2];
+    // int index = ((seg_cap + 8) / 32) - 1;
+
+    // stack_push(&((Stack*)(mem->recycler))[index], seg_addr);
 }

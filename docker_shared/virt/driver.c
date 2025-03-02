@@ -153,16 +153,16 @@ uint32_t vs_malloc(Mem_T *mem, uint32_t size)
     return user_start;
 }
 
-// NOTE: this function is intended to be private to this module. We don't want
-// clients accessing 64 bit addresses
-inline void *convert_address(Mem_T *mem, uint32_t addr)
-{
-    void *seg = mem->usable_mem;
-    void *ptr = ((char *)seg + addr);
+// // NOTE: this function is intended to be private to this module. We don't want
+// // clients accessing 64 bit addresses
+// inline void *convert_address(Mem_T *mem, uint32_t addr)
+// {
+//     void *seg = mem->usable_mem;
+//     void *ptr = ((char *)seg + addr);
 
-    // printf("Address %u has been converted to pointer %p\n", addr, ptr);
-    return ptr;
-}
+//     // printf("Address %u has been converted to pointer %p\n", addr, ptr);
+//     return ptr;
+// }
 
 uint32_t vs_calloc(Mem_T *mem, uint32_t size){
 
