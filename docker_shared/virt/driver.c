@@ -1,6 +1,5 @@
 /**
  * @file driver.c
- * @author hackathon team
  * @date February 2025
  * @brief
  * Implement the virtual memory system drivers and interface.
@@ -193,9 +192,7 @@ uint32_t vs_calloc(Mem_T *mem, uint32_t size){
  * Since this is a hackathon, we are making the restricting assumption that all
  * memory accesses will be 4 bytes so that our system can be used in the UM.
  * A complete virtual memory system would have to provide a better interface
- * than this, but it will do for our purposes.
- */
-
+ * than this, but it will do for our purposes. */
 void set_at(Mem_T *mem, uint32_t base, uint32_t offset, uint32_t value)
 {
     // convert v^2 address to virtual address
