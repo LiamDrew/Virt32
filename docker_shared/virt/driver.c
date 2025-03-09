@@ -46,26 +46,35 @@ Mem_T* init_memory_system(uint32_t kernel_size)
     // printf("Start of mem: %p\n", mem_state->mem);
     // printf("Start of usable mem: %p\n", mem_state->usable_mem);
 
-    mem_state->kernel_virtual_size = kernel_size;
+    // The kernel virtual size should be 8 bytes smaller than the physical size
+    // 
+    mem_state->kernel_virtual_size = kernel_size - 8;
     mem_state->begin_unused = kernel_size;
 
     return mem_state;
 }
 
+void terminate_memory_system(Mem_T *mem)
+{
+    // Free the huge page
+    munmap(mem->mem, GB4);
+
+    // TODO: also need to free the recycler
+}
+
 uint32_t kern_recalloc(Mem_T *mem, uint32_t size)
 {
-    // printf("Trying to alloc kernel memory\n");
+    printf("Kernel Recalloc\n");
+    printf("User requesting %u bytes. There are %u bytes available\n", size, mem->kernel_virtual_size);
+
     // Assert that the kernel has enough protected space for us to use
     assert(mem->kernel_virtual_size >= size);
 
-    void *void_mem_start = mem->mem;
-    uint32_t *mem_start = (uint32_t*)void_mem_start;
-
-    // This is redundant but I will keep it in for clarity
+    // Update the first 8 bytes of "physical" memory with kernel bookkeeping
+    uint32_t *mem_start = (uint32_t*)mem->mem;
     *mem_start = mem->kernel_virtual_size;
     mem_start++;
-    // give the user the size that they requested
-    *mem_start = size;
+    *mem_start = size;  // allow the kernel to use only the memory it requested
 
     // zero out all the bytes the user wants
     memset(mem->usable_mem, 0, size);

@@ -17,6 +17,8 @@
 /* Initialize the virtual memory system */
 Mem_T *init_memory_system(uint32_t kernel_size);
 
+void terminate_memory_system(Mem_T *mem);
+
 /* Kernel Allocator (kern_recalloc):
  * Overwrite whatever is in the zero segment and initialize all requested
  * memory to zero. In a real OS, the kernel memory management needs to be

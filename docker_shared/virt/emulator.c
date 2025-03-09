@@ -6,13 +6,6 @@
  * This program implements a Universal Machine (UM) emulator. The UM is an
  * extremely simple virtual machine. For more information about the UM
  * specification, please see the project README.
- *
- * This UM emulator has been profiled for an x86 linux system hosted in a Docker
- * container on an Apple Silicon Mac. It runs the sandmark, a benchmark
- * UM assembly language program, in 2.80 seconds
- *
- * This already fast UM emulator is the starting benchmark for my UM assembly
- * to x86 assembly just-in-time compiler.
  */
 
 #include <stdio.h>
@@ -28,33 +21,19 @@
 
 #define NUM_REGISTERS 8
 #define POWER ((uint64_t)1 << 32) // for preventing overflow with add and div
-#define ICAP 32500                // determined experimentally for sandmark
-
 typedef uint32_t Instruction;
 
-/* Sequence of program segments */
-uint32_t **segment_sequence = NULL;
-uint32_t seq_size = 0;
-uint32_t seq_capacity = 0;
-uint32_t *segment_lengths = NULL;
-
-/* Sequence of recycled segments */
-uint32_t *recycled_ids = NULL;
-uint32_t rec_size = 0;
-uint32_t rec_capacity = 0;
-
-uint32_t *initialize_memory(FILE *fp, size_t fsize, Mem_T *mem);
+void initialize_memory(FILE *fp, size_t fsize, Mem_T *mem);
 uint64_t assemble_word(uint64_t word, unsigned width, unsigned lsb,
                        uint64_t value);
 
 void handle_instructions(uint32_t *zero, Mem_T *mem);
-void handle_stop(void);
-static inline bool exec_instr(Instruction word, Instruction **pp,
-                              uint32_t *regs, uint32_t *zero, Mem_T *mem, uint32_t *pc);
-
+static inline bool exec_instr(Instruction word, Instruction **pp, 
+                              uint32_t *regs, uint32_t *zero, Mem_T *mem, 
+                              uint32_t *pc);
 uint32_t map_segment(uint32_t size, Mem_T *mem);
 void unmap_segment(uint32_t segment, Mem_T *mem);
-void load_segment(uint32_t index, uint32_t *zero, Mem_T *mem);
+void load_segment(uint32_t index, uint32_t *zero, Mem_T *mem, uint32_t *regs, uint32_t c);
 
 int main(int argc, char *argv[])
 {
@@ -72,43 +51,32 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
+    /* NOTE: For some reason, this is returning that the size of the file is 4
+     * bytes larger than we think it should be it.*/
     size_t fsize = 0;
     struct stat file_stat;
     if (stat(argv[1], &file_stat) == 0)
         fsize = file_stat.st_size;
 
-    // this is 2^19
-    uint32_t kern_size = 524288;
+    uint32_t kern_size = 524288; // this is 2^19
     Mem_T *mem = init_memory_system(kern_size);
-    (void)mem;
 
-    uint32_t *zero_segment = initialize_memory(fp, fsize + sizeof(Instruction), mem);
-    // printf("\n\nIn between init and use\n\n");
-    handle_instructions(zero_segment, mem);
+    initialize_memory(fp, fsize + sizeof(Instruction), mem);
+    
+    handle_instructions(NULL, mem);
 
-    // TODO: free memory system
-
-    // printf("\nExiting UM\n");
+    terminate_memory_system(mem);
     
     return EXIT_SUCCESS;
 }
 
-uint32_t *initialize_memory(FILE *fp, size_t fsize, Mem_T *mem)
+void initialize_memory(FILE *fp, size_t fsize, Mem_T *mem)
 {
-    seq_capacity = ICAP;
-    segment_sequence = (uint32_t **)calloc(seq_capacity, sizeof(uint32_t *));
-    segment_lengths = (uint32_t *)calloc(seq_capacity, sizeof(uint32_t));
-
-    rec_capacity = ICAP;
-    recycled_ids = (uint32_t *)calloc(rec_capacity, sizeof(uint32_t *));
-
-    /* Load initial segment from file */
-    uint32_t *zero = (uint32_t *)calloc(fsize, sizeof(uint32_t));
-
-    (void)mem;
-    // kern_realloc here
-    // I think fsize should be sufficient here, we'll see
-    kern_recalloc(mem, fsize * sizeof(uint32_t));
+    /* NOTE: Here, fsize is already adjusted to account for the fact that each
+     * UM instruction is 4 bytes. Future allocations will have to take this into
+     * account. */
+    printf("We expect fsize to be 48: %zu\n", fsize);
+    kern_recalloc(mem, fsize);
     uint32_t word = 0;
     int c;
     int i = 0;
@@ -126,36 +94,16 @@ uint32_t *initialize_memory(FILE *fp, size_t fsize, Mem_T *mem)
         else if (i % 4 == 3)
         {
             word = assemble_word(word, 8, 0, c_char);
-            
-            // doing both for now
-            zero[i / 4] = word;
-
-            // uint32_t opcode = word >> 28;
-
-            // printf("Storing word at segment 0 at index %lu with opcode: %u\n", (i / 4) * sizeof(uint32_t), opcode);
 
             // storing in the zero segment here
             set_at(mem, 0, (i / 4) * sizeof(uint32_t), word);
-            // use set at
-
-            // uint32_t temp_word = get_at(mem, 0, (i / 4) * sizeof(uint32_t));
-
-            // uint32_t temp_opcode = temp_word >> 28;
-
-            // printf("Getting word at segment 0 at index %lu with opcode: %u\n", (i / 4) * sizeof(uint32_t), temp_opcode);
-
-            // assert(temp_word == word);
             word = 0;
         }
+
         i++;
     }
 
     fclose(fp);
-    segment_sequence[0] = zero;
-    segment_lengths[0] = fsize;
-    seq_size++;
-
-    return zero;
 }
 
 uint64_t assemble_word(uint64_t word, unsigned width, unsigned lsb,
@@ -177,7 +125,6 @@ void handle_instructions(uint32_t *zero, Mem_T *mem)
 {
     uint32_t regs[NUM_REGISTERS] = {0};
     uint32_t pc = 0;
-    // Instruction *pp = zero;
     Instruction *pp = NULL;
     Instruction word;
 
@@ -189,12 +136,17 @@ void handle_instructions(uint32_t *zero, Mem_T *mem)
         // uint32_t opcode = word >> 28;
         // printf("Getting word at segment 0 at index %u and opcode is %u\n", pc, opcode);
         pc++;
-        // word = *pp;
-        // exit = exec_instr(word, &pp, regs, zero, mem);
         exit = exec_instr(word, &pp, regs, zero, mem, &pc);
     }
+}
 
-    handle_stop();
+void print_registers(uint32_t *regs)
+{
+    printf("\n______\n");
+    for (int i = 0; i < 8; i++) {
+        printf("Register %d is %u\n", i, regs[i]);
+    }
+    printf("______\n");
 }
 
 static inline bool exec_instr(Instruction word, Instruction **pp,
@@ -203,8 +155,11 @@ static inline bool exec_instr(Instruction word, Instruction **pp,
     (void)pp;
     (void)mem;
     (void)zero;
+
     uint32_t a = 0, b = 0, c = 0, val = 0;
     uint32_t opcode = word >> 28;
+
+    // print_rfegisters(regs);
 
     // printf("Opcode is %u\n", opcode);
 
@@ -221,29 +176,17 @@ static inline bool exec_instr(Instruction word, Instruction **pp,
     b = (word >> 3) & 0x7;
     a = (word >> 6) & 0x7;
 
-
-
-    // TODO: These two functions need to change
-
     /* Segmented Load */
     if (__builtin_expect(opcode == 1, 1))
     {
-        // printf("Doing a SEG LOAD...");
         regs[a] = get_at(mem, regs[b], regs[c] * sizeof(uint32_t));
-        // printf("Done with load\n");
-        // regs[a] = segment_sequence[regs[b]][regs[c]];
     }
 
     /* Segmented Store */
     else if (__builtin_expect(opcode == 2, 1))
     {
-        // printf("Doing a SEG STORE...");
         set_at(mem, regs[a], regs[b] * sizeof(uint32_t), regs[c]);
-        // printf("Done with store\n");
-        // segment_sequence[regs[a]][regs[b]] = regs[c];
     }
-
-
 
     /* Bitwise NAND */
     else if (__builtin_expect(opcode == 6, 1))
@@ -251,18 +194,12 @@ static inline bool exec_instr(Instruction word, Instruction **pp,
         regs[a] = ~(regs[b] & regs[c]);
     }
 
-
-
-    // TODO: This function needs to change
-
     /* Load Segment */
     else if (__builtin_expect(opcode == 12, 0))
     {
         // printf("Loading segment, regs[c] is: %u\n", regs[c]);
-        load_segment(regs[b], zero, mem);
-        *pc = regs[c]; 
-        // intentionally not multiplying
-        // *pp = segment_sequence[0] + regs[c];
+        load_segment(regs[b], zero, mem, regs, c);
+        *pc = regs[c];      // intentionally not multiplying
     }
 
     /* Addition */
@@ -278,7 +215,6 @@ static inline bool exec_instr(Instruction word, Instruction **pp,
             regs[a] = regs[b];
     }
 
-    // TODO: These two functions need to change
     /* Map Segment */
     else if (__builtin_expect(opcode == 8, 0))
     {
@@ -324,48 +260,41 @@ static inline bool exec_instr(Instruction word, Instruction **pp,
     return false;
 }
 
-void handle_stop(void)
-{
-    for (uint32_t i = 0; i < seq_size; i++)
-        free(segment_sequence[i]);
-    free(segment_sequence);
-    free(segment_lengths);
-    free(recycled_ids);
-}
-
 uint32_t map_segment(uint32_t size, Mem_T *mem)
 {
-    (void)size;
-    uint32_t addr = vs_calloc(mem, size * sizeof(uint32_t));
-    return addr;
+    return vs_calloc(mem, size * sizeof(uint32_t));
 }
 
 void unmap_segment(uint32_t segment, Mem_T *mem)
 {
     (void)mem;
     (void)segment;
-    // do nothing for now
+    
+    /* NOTE: The recycler currently segfaults and is completely unusable
+     * I suspect this has to do more with it's usage/integration than with it's
+     * implementation in the first place. */
+    // vs_free(mem, segment);
 }
 
-void load_segment(uint32_t index, uint32_t *zero, Mem_T *mem)
+void load_segment(uint32_t index, uint32_t *zero, Mem_T *mem, uint32_t *regs, uint32_t c)
 {
     (void)index;
     (void)zero;
     (void)mem;
 
-    // don't bother doing anything for 0 segmetn
-    if (index == 0) {
-        return;
-    }
+    // Return immediately if loading elsewhere in the zero segment
+    if (index == 0) return;
 
     // assert(false);
+    // NOTE: We need to get this right to get sandmark to run
 
-    // printf("This is a sandmark thing\n");
+    // added for debugging
+    print_registers(regs);
+    printf("Index here is %u\n", regs[c]);
 
     // get the size of the segment
-    void *seg_addr = convert_address(mem, index);
     // printf("Seg addr is %p\n", seg_addr);
-
+    void *seg_addr = convert_address(mem, index);
     uint32_t *usable_kern_addr = (uint32_t *)convert_address(mem, 0);
     
     // get segment size
@@ -375,95 +304,15 @@ void load_segment(uint32_t index, uint32_t *zero, Mem_T *mem)
 
     kern_recalloc(mem, copy_size);
 
+    // TODO: Need to correctly duplicate the segment we want into the kernel space
 
-
-    printf("Copying segment of size %u\n", copy_size);
-
+    // printf("Copying segment of size %u\n", copy_size);
     for (uint32_t i = 0; i < (copy_size / 4); i++) {
         uint32_t my_temp = my_addr[i];
         uint32_t temp_opcode = my_temp >> 28;
         (void)temp_opcode;
 
         // printf("Getting word at segment 0 at index %u with opcode: %u\n", i, temp_opcode);
-
         usable_kern_addr[i] = my_addr[i];
     }
-
-
-
-    // printf("Actually trying to run load segment\n");
-
-    printf("making it to the end of load program\n");
-    // kern_memcpy(mem, index, 0, 10);
-    // assert(false);
 }
-
-// Old version
-// uint32_t map_segment(uint32_t size)
-// {
-//     uint32_t new_seg_id;
-
-//     /* If there are no available recycled segment ids, make a new one */
-//     if (rec_size == 0)
-//     {
-//         if (seq_size == seq_capacity)
-//         {
-//             /* Expand the sequence if necessary */
-//             seq_capacity = seq_capacity * 2 + 2;
-//             segment_lengths = (uint32_t *)realloc(segment_lengths,
-//                                                   (seq_capacity) * sizeof(uint32_t));
-//             segment_sequence = (uint32_t **)realloc(segment_sequence,
-//                                                     (seq_capacity) * sizeof(uint32_t *));
-
-//             for (uint32_t i = seq_size; i < seq_capacity; i++)
-//             {
-//                 segment_sequence[i] = NULL;
-//                 segment_lengths[i] = 0;
-//             }
-//         }
-
-//         new_seg_id = seq_size++;
-//     }
-
-//     /* Otherwise, reuse an old one */
-//     else
-//         new_seg_id = recycled_ids[--rec_size];
-
-//     if (segment_sequence[new_seg_id] == NULL ||
-//         size > segment_lengths[new_seg_id])
-//     {
-//         segment_sequence[new_seg_id] =
-//             (uint32_t *)realloc(segment_sequence[new_seg_id],
-//                                 size * sizeof(uint32_t));
-//         segment_lengths[new_seg_id] = size;
-//     }
-
-//     /* Zero out the segment */
-//     memset(segment_sequence[new_seg_id], 0, size * sizeof(uint32_t));
-//     return new_seg_id;
-// }
-
-// void unmap_segment(uint32_t segment)
-// {
-//     if (rec_size == rec_capacity)
-//     {
-//         rec_capacity = rec_capacity * 2 + 2;
-//         recycled_ids = (uint32_t *)realloc(recycled_ids, (rec_capacity) * sizeof(uint32_t));
-//     }
-
-//     recycled_ids[rec_size++] = segment;
-// }
-
-// void load_segment(uint32_t index, uint32_t *zero)
-// {
-//     (void)zero;
-//     if (index > 0)
-//     {
-//         uint32_t copied_seq_size = segment_lengths[index];
-
-//         uint32_t *new_zero = malloc(copied_seq_size * sizeof(uint32_t));
-//         memcpy(new_zero, segment_sequence[index],
-//                copied_seq_size * sizeof(uint32_t));
-//         segment_sequence[0] = new_zero;
-//     }
-// }

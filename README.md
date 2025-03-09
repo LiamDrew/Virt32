@@ -2,7 +2,7 @@
 # Virt32
 
 A 32-bit userspace virtual memory system designed to accelerate 32-bit to 64-bit
-address translations for the Universal Machine, a simple 32-bit virtual machine 
+address translations for the Universal Machine, a 32-bit virtual machine 
 with a RISC-style instruction set. 
 
 Created by Liam Drew, Hameedah Lawal, Milo Goldstein, Jason Miller, and Yoda Ermias.  
