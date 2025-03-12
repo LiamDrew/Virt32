@@ -5,6 +5,9 @@
  * Implement the virtual memory system drivers and interface.
  */
 
+////////////////////////////////////////
+/* bad practice. All of our includes should go in the .h, unless we need to use
+ * some of them 'secretly' (which is fine, it needs to be purposeful, though)*/
 #include "driver.h"
 #include "recycler.h"
 #include <stdlib.h>
@@ -17,7 +20,12 @@
 #define BOOK_SIZE 8
 #define BLOCK_SIZE 32
 
-/* This allows us to keep memory state private to the driver module */
+/* This allows us to keep memory state private to the driver module */ 
+////////////////////////////////////////
+/* I disagree. This allows us to keep a specific instance of a memory state
+ * struct private to the driver file, in theory. In practice, we end up 
+ * returning this specific struct to the user. This, alongside mem_state.h 
+ * containing the struct actually makes this suuuuuper public. */
 static Mem_T *mem_state = NULL;
 
 /* Convert address is private to this module */
@@ -28,7 +36,7 @@ Mem_T* init_memory_system(uint32_t kernel_size)
     /* Safely initialize the memory state */
     assert(mem_state == NULL);
     mem_state = (Mem_T*) malloc(sizeof(Mem_T));
-    assert(mem_state != NULL);
+    assert(mem_state);
 
     /* This mmap allocates 4GB of emulated physical memory.
      * Ideally, we would protect this memory by giving the "user" program no 
@@ -64,8 +72,8 @@ void terminate_memory_system(Mem_T *mem)
 
 uint32_t kern_recalloc(Mem_T *mem, uint32_t size)
 {
-    printf("Kernel Recalloc\n");
-    printf("User requesting %u bytes. There are %u bytes available\n", size, mem->kernel_virtual_size);
+    //printf("Kernel Recalloc\n");
+    //printf("User requesting %u bytes. There are %u bytes available\n", size, mem->kernel_virtual_size);
 
     // Assert that the kernel has enough protected space for us to use
     assert(mem->kernel_virtual_size >= size);
@@ -76,7 +84,7 @@ uint32_t kern_recalloc(Mem_T *mem, uint32_t size)
     mem_start++;
     *mem_start = size;  // allow the kernel to use only the memory it requested
 
-    // zero out all the bytes the user wants
+    // zero out all the bytes the user want
     memset(mem->usable_mem, 0, size);
 
     // printf("Successfully allocated kernel memory\n");

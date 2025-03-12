@@ -169,6 +169,7 @@ static inline bool exec_instr(Instruction word, Instruction **pp,
         a = (word >> 25) & 0x7;
         val = word & 0x1FFFFFF;
         regs[a] = val;
+        // fprintf(stderr, "Load Value\n");
         return false;
     }
 
@@ -180,18 +181,21 @@ static inline bool exec_instr(Instruction word, Instruction **pp,
     if (__builtin_expect(opcode == 1, 1))
     {
         regs[a] = get_at(mem, regs[b], regs[c] * sizeof(uint32_t));
+        // fprintf(stderr, "Segmented Load\n");
     }
 
     /* Segmented Store */
     else if (__builtin_expect(opcode == 2, 1))
     {
         set_at(mem, regs[a], regs[b] * sizeof(uint32_t), regs[c]);
+        // fprintf(stderr, "Segmented Store\n");
     }
 
     /* Bitwise NAND */
     else if (__builtin_expect(opcode == 6, 1))
     {
         regs[a] = ~(regs[b] & regs[c]);
+        // fprintf(stderr, "Bitwise NAND\n");
     }
 
     /* Load Segment */
@@ -200,6 +204,7 @@ static inline bool exec_instr(Instruction word, Instruction **pp,
         // printf("Loading segment, regs[c] is: %u\n", regs[c]);
         load_segment(regs[b], zero, mem, regs, c);
         *pc = regs[c];      // intentionally not multiplying
+        // fprintf(stderr, "Load Segment\n");
     }
 
     /* Addition */
@@ -213,47 +218,54 @@ static inline bool exec_instr(Instruction word, Instruction **pp,
     {
         if (regs[c] != 0)
             regs[a] = regs[b];
+        // fprintf(stderr, "Conditional Move\n");
     }
 
     /* Map Segment */
     else if (__builtin_expect(opcode == 8, 0))
     {
         regs[b] = map_segment(regs[c], mem);
+        // fprintf(stderr, "Map Segment\n");
     }
 
     /* Unmap Segment */
     else if (__builtin_expect(opcode == 9, 0))
     {
         unmap_segment(regs[c], mem);
+        // fprintf(stderr, "Unmap Segment\n");
     }
 
     /* Division */
     else if (__builtin_expect(opcode == 5, 0))
     {
         regs[a] = regs[b] / regs[c];
+        // fprintf(stderr, "Division\n");
     }
 
     /* Multiplication */
     else if (__builtin_expect(opcode == 4, 0))
     {
         regs[a] = (regs[b] * regs[c]) % POWER;
+        // fprintf(stderr, "Multiplication\n");
     }
 
     /* Output */
     else if (__builtin_expect(opcode == 10, 0))
     {
         putchar((unsigned char)regs[c]);
+        // fprintf(stderr, "Output\n");
     }
 
     /* Input */
     else if (__builtin_expect(opcode == 11, 0))
     {
         regs[c] = getc(stdin);
+        // fprintf(stderr, "Input\n");
     }
-
     /* Stop or Invalid Instruction */
     else
     {
+        // fprintf(stderr, "Stopcode: %d\n", opcode);
         return true;
     }
 
@@ -280,7 +292,9 @@ void load_segment(uint32_t index, uint32_t *zero, Mem_T *mem, uint32_t *regs, ui
 {
     (void)index;
     (void)zero;
-    (void)mem;
+    //(void)mem;
+    (void) regs;
+    (void) c;
 
     // Return immediately if loading elsewhere in the zero segment
     if (index == 0) return;
@@ -289,25 +303,24 @@ void load_segment(uint32_t index, uint32_t *zero, Mem_T *mem, uint32_t *regs, ui
     // NOTE: We need to get this right to get sandmark to run
 
     // added for debugging
-    print_registers(regs);
-    printf("Index here is %u\n", regs[c]);
+    //print_registers(regs);
+    //printf("Index here is %u\n", regs[c]);
 
     // get the size of the segment
     // printf("Seg addr is %p\n", seg_addr);
     void *seg_addr = convert_address(mem, index);
     uint32_t *usable_kern_addr = (uint32_t *)convert_address(mem, 0);
-    
     // get segment size
     uint32_t *my_addr = seg_addr;
-    my_addr--;
-    uint32_t copy_size = *my_addr;
+    uint32_t copy_size = my_addr[-1];
 
     kern_recalloc(mem, copy_size);
 
     // TODO: Need to correctly duplicate the segment we want into the kernel space
 
     // printf("Copying segment of size %u\n", copy_size);
-    for (uint32_t i = 0; i < (copy_size / 4); i++) {
+    uint32_t loop_size = copy_size / 4;
+    for (uint32_t i = 0; i < loop_size; i++) {
         uint32_t my_temp = my_addr[i];
         uint32_t temp_opcode = my_temp >> 28;
         (void)temp_opcode;
