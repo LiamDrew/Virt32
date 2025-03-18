@@ -16,28 +16,45 @@
 #include <sys/mman.h>
 #include <string.h>
 
-// #define GB4 4294967296
-#define GB4 ((uint64_t)1 << 32)
+#define GB4 ((uint64_t)1 << 32)     // GB4 = 2^32
 #define BOOK_SIZE 8
 #define BLOCK_SIZE 32
 
-/* This allows us to keep memory state private to the driver module */ 
 ////////////////////////////////////////
 /* I disagree. This allows us to keep a specific instance of a memory state
  * struct private to the driver file, in theory. In practice, we end up 
  * returning this specific struct to the user. This, alongside mem_state.h 
  * containing the struct actually makes this suuuuuper public. */
-static Mem_T *mem_state = NULL;
 
-/* Convert address is private to this module */
-// void *convert_address(Mem_T *mem, uint32_t addr);
+/* Only the driver module needs the complete memory state struct. The user only
+ * needs the first usable virtual address in order to handle address
+ * translations */ 
+static Mem_T *mem = NULL;
+uint8_t *usable = NULL;
+
+/* THIS Convert address is private to this module 
+ * There is some bad communication going on between modules that needs to be
+ * addressed soon (but not right now) */
+static inline void *convert_address2(uint32_t addr);
+
+// NOTE: this function is intended to be private to this module. We don't want
+// clients accessing 64 bit addresses
+static inline void *convert_address2(uint32_t addr)
+{
+    // void *seg = usable;
+    // void *ptr = ((char *)seg + addr);
+    // printf("Address %u has been converted to pointer %p\n", addr, ptr);
+
+    void *ptr = usable + addr;
+    return ptr;
+}
 
 Mem_T* init_memory_system(uint32_t kernel_size)
 {    
     /* Safely initialize the memory state */
-    assert(mem_state == NULL);
-    mem_state = (Mem_T*) malloc(sizeof(Mem_T));
-    assert(mem_state);
+    assert(mem == NULL);
+    mem = (Mem_T*) malloc(sizeof(Mem_T));
+    assert(mem != NULL); // Milo no likey, but I think it improves readability
 
     /* This mmap allocates 4GB of emulated physical memory.
      * Ideally, we would protect this memory by giving the "user" program no 
@@ -46,32 +63,35 @@ Mem_T* init_memory_system(uint32_t kernel_size)
      * same, so we are enforcing security through abstraction. This is a less
      * than ideal solution and we acknowledge this. We need hardware support to
      * do this properly. */
-    void *mem = mmap(NULL, GB4, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    void *phys = mmap(NULL, GB4, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
-    mem_state->mem = mem;
-    mem_state->usable_mem = (void*)((char*)mem + BOOK_SIZE);
-    mem_state->recycler = recycler_init();
+    usable = (uint8_t*)phys + BOOK_SIZE;
+    
+    // TODO: fix this stupid naming convention
+    mem->mem = phys;
+    mem->usable_mem = (void*)((char*)phys + BOOK_SIZE);
+    mem->recycler = recycler_init();
 
     // printf("Start of mem: %p\n", mem_state->mem);
     // printf("Start of usable mem: %p\n", mem_state->usable_mem);
 
-    // The kernel virtual size should be 8 bytes smaller than the physical size
-    // 
-    mem_state->kernel_virtual_size = kernel_size - 8;
-    mem_state->begin_unused = kernel_size;
+    /* The kernel virtual size is 8 bytes smaller than its physical size */
+    mem->kernel_virtual_size = kernel_size - BOOK_SIZE;
+    mem->begin_unused = kernel_size;
 
-    return mem_state;
+    // TODO: this function shouldn't have to return anything except the first
+    // usable address. Everything else should be private
+    return mem;
 }
 
-void terminate_memory_system(Mem_T *mem)
+void terminate_memory_system(void)
 {
-    // Free the huge page
+    /* Free the memory object statically defined within this file */
     munmap(mem->mem, GB4);
-
     // TODO: also need to free the recycler
 }
 
-uint32_t kern_recalloc(Mem_T *mem, uint32_t size)
+uint32_t kern_recalloc(uint32_t size)
 {
     //printf("Kernel Recalloc\n");
     //printf("User requesting %u bytes. There are %u bytes available\n", size, mem->kernel_virtual_size);
@@ -88,13 +108,11 @@ uint32_t kern_recalloc(Mem_T *mem, uint32_t size)
     // zero out all the bytes the user want
     memset(mem->usable_mem, 0, size);
 
-    // printf("Successfully allocated kernel memory\n");
-
-    return 0;
+    return 0; /* The base kernel address is always 0. */
 }
 
 
-void kern_memcpy(Mem_T *mem, uint32_t src_addr, uint32_t dest_addr, uint32_t copy_size)
+void kern_memcpy(uint32_t src_addr, uint32_t dest_addr, uint32_t copy_size)
 {
     // only allow memcpy from user space to kernel space
     // TODO: build some safety into this
@@ -112,22 +130,24 @@ void kern_memcpy(Mem_T *mem, uint32_t src_addr, uint32_t dest_addr, uint32_t cop
     // memcpy(real_dest, real_src, copy_size);
 }
 
-uint32_t vs_malloc(Mem_T *mem, uint32_t size)
+uint32_t vs_malloc(uint32_t size)
 {
     /* users may only ask vs_malloc for 1MB of contiguous space, maximum */
     //assert(((size >> 32) - 8) < (2 << 30))
+
+    // TODO: actually get the recycler to work. Until then, leave this commented
     /* Look for segments to be recycled. If there are freed segments that are
      * ready to be recycled, recycled them */
     
-    uint32_t freed_seg = find_freed_segment(mem, size);
+    // uint32_t freed_seg = find_freed_segment(mem, size);
 
-     /* check that a free segment is available */
-    if (freed_seg) {
-        // update capacity, size, and usable beginner address for client
-        uint32_t *freed_seg_addr = convert_address(mem, freed_seg);
-        freed_seg_addr[-1] = size;
-        return freed_seg;
-    }
+    //  /* check that a free segment is available */
+    // if (freed_seg) {
+    //     // update capacity, size, and usable beginner address for client
+    //     uint32_t *freed_seg_addr = convert_address(mem, freed_seg);
+    //     freed_seg_addr[-1] = size;
+    //     return freed_seg;
+    // }
     
     /* If no segments can be recycled, carve a fresh one from the heap */
     
@@ -148,41 +168,14 @@ uint32_t vs_malloc(Mem_T *mem, uint32_t size)
     mem->begin_unused = user_start + user_cap;
 
     uint32_t *user_addr = convert_address(mem, user_start);
-    
-    // printf("Start addr is %p\n", (void*)start_addr);
 
     user_addr[-2] = user_cap;
     user_addr[-1] = size;
 
-    // printf("This is start addr: %d\n", user_start);
-
-    // uint32_t *phys = convert_address(mem, user_start);
-    
-    // printf("This is bk_addr %d\n", bk_addr);  
-    // int seg_cap = phys[-2];
-
-    // printf("This is seg_cap after init %d\n", seg_cap);
-
-    // int seg_cap = phys[65536];
-    
-    // printf("This is seg_cap right after init %d\n", seg_cap);
-
-    // Add 8 bytes to the client-facing address (to skip over our bookkeeping)
     return user_start;
 }
 
-// // NOTE: this function is intended to be private to this module. We don't want
-// // clients accessing 64 bit addresses
-// inline void *convert_address(Mem_T *mem, uint32_t addr)
-// {
-//     void *seg = mem->usable_mem;
-//     void *ptr = ((char *)seg + addr);
-
-//     // printf("Address %u has been converted to pointer %p\n", addr, ptr);
-//     return ptr;
-// }
-
-uint32_t vs_calloc(Mem_T *mem, uint32_t size){
+uint32_t vs_calloc(uint32_t size){
 
     /* This will be a wrapper over vs_malloc that calls memset( , 0, ) after
      * allocation. I want to explicitly define this now because I think a
@@ -197,10 +190,10 @@ uint32_t vs_calloc(Mem_T *mem, uint32_t size){
      */
 
     // do the malloc in the first place
-    uint32_t addr = vs_malloc(mem, size);
+    uint32_t addr = vs_malloc(size);
     
     // convert the virtual address to physical
-    void *ptr = convert_address(mem, addr);
+    void *ptr = convert_address2(addr);
 
     // memset the physical memory
     memset(ptr, 0, size);
@@ -209,8 +202,18 @@ uint32_t vs_calloc(Mem_T *mem, uint32_t size){
     return addr;
 }
 
-// These will call the dangerous ones, which we will eventually want to make
-// the program fly
+void vs_free(uint32_t addr)
+{
+    // printf("Freeing the memory segment with id %u\n", addr);
+
+    // Update the free list
+    free_segment(mem, addr);
+    return;
+}
+
+
+// These functions will call the dangerous ones, which we will eventually want 
+// to make the program fly
 
 /*
  * Important design choice: since we are pretending to be the "kernel", but we
@@ -270,15 +273,6 @@ uint32_t vs_calloc(Mem_T *mem, uint32_t size){
 //     // call get at
 //     return get_at(mem, base, offset);
 // }
-
-void vs_free(Mem_T *mem, uint32_t addr)
-{
-    // printf("Freeing the memory segment with id %u\n", addr);
-
-    // Update the free list
-    free_segment(mem, addr);
-    return;
-}
 
 /* 
  * TO BE REVISITED: Interesting architecture problem

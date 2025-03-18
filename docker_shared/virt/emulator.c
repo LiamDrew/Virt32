@@ -23,44 +23,47 @@
 #define POWER ((uint64_t)1 << 32) // for preventing overflow with add and div
 typedef uint32_t Instruction;
 
-void initialize_memory(FILE *fp, size_t fsize, Mem_T *mem);
+void initialize_memory(FILE *fp, size_t fsize, uint8_t *umem);
 uint64_t assemble_word(uint64_t word, unsigned width, unsigned lsb,
                        uint64_t value);
 
-void handle_instructions(uint32_t *zero, Mem_T *mem);
-static inline bool exec_instr(Instruction word, Instruction **pp, 
-                              uint32_t *regs, uint32_t *zero, Mem_T *mem, 
+void handle_instructions(uint8_t *mem);
+static inline bool exec_instr(Instruction word, 
+                              uint32_t *regs, uint8_t *umem, 
                               uint32_t *pc);
-uint32_t map_segment(uint32_t size, Mem_T *mem);
-void unmap_segment(uint32_t segment, Mem_T *mem);
-void load_segment(uint32_t index, uint32_t *zero, Mem_T *mem, uint32_t *regs, uint32_t c);
+uint32_t map_segment(uint32_t size);
+void unmap_segment(uint32_t segmentm);
+void load_segment(uint32_t index, uint8_t *umem);
 
 /* In order to be properly fast, set_at() and get_at() need to be inlined by
  * the compiler. These functions are defined in the driver module, and I don't
  * know enough C to know if that is possible. So I am going to define those
  * functions inline here for now, and figure it out later. */
 
-static uint8_t *umem = NULL;
+/* We can consider having these defined as globals, but they are needed so much
+ * I think it makes sense to make them local variables */
 
-static inline void *local_convert(uint32_t addr)
+// static uint8_t *umem = NULL;
+// extern uint8_t *usable;
+
+static inline void *my_convert_address(uint8_t *umem, uint32_t addr)
 {
-    void *ptr = umem + addr;
-    return ptr;
+    // void *out = umem + addr;
+    return umem + addr;
 }
 
-static inline void set_at(Mem_T *mem, uint32_t base, uint32_t offset, uint32_t value)
+
+static inline void set_at(uint8_t *umem, uint32_t addr, uint32_t value)
 {
-    (void)mem;
     // convert v^2 address to virtual address
-    uint32_t *dest = (uint32_t *)local_convert(base + offset);
+    uint32_t *dest = (uint32_t *)(umem + addr);
     *dest = value;
 }
 
-static inline uint32_t get_at(Mem_T *mem, uint32_t base, uint32_t offset)
+static inline uint32_t get_at(uint8_t *umem, uint32_t addr)
 {
-    (void)mem;
     // convert v^2 address to virtual address
-    uint32_t *src = (uint32_t *)local_convert(base + offset);
+    uint32_t *src = (uint32_t *)(umem + addr);
     return *src;
 }
 
@@ -89,24 +92,23 @@ int main(int argc, char *argv[])
 
     uint32_t kern_size = 524288; // this is 2^19
     Mem_T *mem = init_memory_system(kern_size);
-    umem = mem->usable_mem;
+    uint8_t *umem = mem->usable_mem;
 
-    initialize_memory(fp, fsize + sizeof(Instruction), mem);
+    initialize_memory(fp, fsize + sizeof(Instruction), umem);
     
-    handle_instructions(NULL, mem);
+    handle_instructions(umem);
 
-    terminate_memory_system(mem);
+    terminate_memory_system();
     
     return EXIT_SUCCESS;
 }
 
-void initialize_memory(FILE *fp, size_t fsize, Mem_T *mem)
+void initialize_memory(FILE *fp, size_t fsize, uint8_t *umem)
 {
     /* NOTE: Here, fsize is already adjusted to account for the fact that each
      * UM instruction is 4 bytes. Future allocations will have to take this into
      * account. */
-    // printf("We expect fsize to be 48: %zu\n", fsize);
-    kern_recalloc(mem, fsize);
+    kern_recalloc(fsize);
     uint32_t word = 0;
     int c;
     int i = 0;
@@ -126,7 +128,7 @@ void initialize_memory(FILE *fp, size_t fsize, Mem_T *mem)
             word = assemble_word(word, 8, 0, c_char);
 
             // storing in the zero segment here
-            set_at(mem, 0, (i / 4) * sizeof(uint32_t), word);
+            set_at(umem, 0 + (i / 4) * sizeof(uint32_t), word);
             word = 0;
         }
 
@@ -151,22 +153,21 @@ uint64_t assemble_word(uint64_t word, unsigned width, unsigned lsb,
     return return_word;
 }
 
-void handle_instructions(uint32_t *zero, Mem_T *mem)
+void handle_instructions(uint8_t *umem)
 {
     uint32_t regs[NUM_REGISTERS] = {0};
     uint32_t pc = 0;
-    Instruction *pp = NULL;
     Instruction word;
 
     bool exit = false;
 
     while (!exit)
     {
-        word = get_at(mem, 0, pc * sizeof(uint32_t));
+        word = get_at(umem, 0 + pc * sizeof(uint32_t));
         // uint32_t opcode = word >> 28;
         // printf("Getting word at segment 0 at index %u and opcode is %u\n", pc, opcode);
         pc++;
-        exit = exec_instr(word, &pp, regs, zero, mem, &pc);
+        exit = exec_instr(word, regs, umem, &pc);
     }
 }
 
@@ -179,17 +180,11 @@ void print_registers(uint32_t *regs)
     printf("______\n");
 }
 
-static inline bool exec_instr(Instruction word, Instruction **pp,
-                              uint32_t *regs, uint32_t *zero, Mem_T *mem, uint32_t *pc)
+static inline bool exec_instr(Instruction word, uint32_t *regs, uint8_t *umem, 
+                              uint32_t *pc)
 {
-    (void)pp;
-    (void)mem;
-    (void)zero;
-
     uint32_t a = 0, b = 0, c = 0, val = 0;
     uint32_t opcode = word >> 28;
-
-    // print_rfegisters(regs);
 
     // printf("Opcode is %u\n", opcode);
 
@@ -210,14 +205,16 @@ static inline bool exec_instr(Instruction word, Instruction **pp,
     /* Segmented Load */
     if (__builtin_expect(opcode == 1, 1))
     {
-        regs[a] = get_at(mem, regs[b], regs[c] * sizeof(uint32_t));
+        regs[a] = get_at(umem, regs[b] + regs[c] * sizeof(uint32_t));
+        // regs[a] = get_at(mem, regs[b], regs[c] * sizeof(uint32_t));
         // fprintf(stderr, "Segmented Load\n");
     }
 
     /* Segmented Store */
     else if (__builtin_expect(opcode == 2, 1))
     {
-        set_at(mem, regs[a], regs[b] * sizeof(uint32_t), regs[c]);
+        set_at(umem, regs[a] + regs[b] * sizeof(uint32_t), regs[c]);
+        // set_at(mem, regs[a], regs[b] * sizeof(uint32_t), regs[c]);
         // fprintf(stderr, "Segmented Store\n");
     }
 
@@ -232,7 +229,8 @@ static inline bool exec_instr(Instruction word, Instruction **pp,
     else if (__builtin_expect(opcode == 12, 0))
     {
         // printf("Loading segment, regs[c] is: %u\n", regs[c]);
-        load_segment(regs[b], zero, mem, regs, c);
+        // load_segment(regs[b], regs, c);
+        load_segment(regs[b], umem);
         *pc = regs[c];      // intentionally not multiplying
         // fprintf(stderr, "Load Segment\n");
     }
@@ -254,14 +252,14 @@ static inline bool exec_instr(Instruction word, Instruction **pp,
     /* Map Segment */
     else if (__builtin_expect(opcode == 8, 0))
     {
-        regs[b] = map_segment(regs[c], mem);
+        regs[b] = map_segment(regs[c]);
         // fprintf(stderr, "Map Segment\n");
     }
 
     /* Unmap Segment */
     else if (__builtin_expect(opcode == 9, 0))
     {
-        unmap_segment(regs[c], mem);
+        unmap_segment(regs[c]);
         // fprintf(stderr, "Unmap Segment\n");
     }
 
@@ -302,14 +300,13 @@ static inline bool exec_instr(Instruction word, Instruction **pp,
     return false;
 }
 
-uint32_t map_segment(uint32_t size, Mem_T *mem)
+uint32_t map_segment(uint32_t size)
 {
-    return vs_calloc(mem, size * sizeof(uint32_t));
+    return vs_calloc(size * sizeof(uint32_t));
 }
 
-void unmap_segment(uint32_t segment, Mem_T *mem)
+void unmap_segment(uint32_t segment)
 {
-    (void)mem;
     (void)segment;
     
     /* NOTE: The recycler currently segfaults and is completely unusable
@@ -318,19 +315,17 @@ void unmap_segment(uint32_t segment, Mem_T *mem)
     // vs_free(mem, segment);
 }
 
-void load_segment(uint32_t index, uint32_t *zero, Mem_T *mem, uint32_t *regs, uint32_t c)
+void load_segment(uint32_t index, uint8_t *umem)
 {
-    (void)index;
-    (void)zero;
-    //(void)mem;
-    (void) regs;
-    (void) c;
-
     // Return immediately if loading elsewhere in the zero segment
     if (index == 0) return;
 
-    // assert(false);
     // NOTE: We need to get this right to get sandmark to run
+    // assert(false);
+
+    /* I am intentionally leaving this broken. I need to do a much more careful
+     * job of going through and making sure that I'm changing interfaces to be
+     * what I want*/
 
     // added for debugging
     //print_registers(regs);
@@ -338,13 +333,15 @@ void load_segment(uint32_t index, uint32_t *zero, Mem_T *mem, uint32_t *regs, ui
 
     // get the size of the segment
     // printf("Seg addr is %p\n", seg_addr);
-    void *seg_addr = convert_address(mem, index);
-    uint32_t *usable_kern_addr = (uint32_t *)convert_address(mem, 0);
+    void *seg_addr = my_convert_address(umem, index);
+    // void *seg_addr = NULL; // need a better plan here
+    uint32_t *usable_kern_addr = (uint32_t *)my_convert_address(umem, 0);
+    // uint32_t *usable_kern_addr = NULL;
     // get segment size
     uint32_t *my_addr = seg_addr;
     uint32_t copy_size = my_addr[-1];
 
-    kern_recalloc(mem, copy_size);
+    kern_recalloc(copy_size);
 
     // TODO: Need to correctly duplicate the segment we want into the kernel space
 
