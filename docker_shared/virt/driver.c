@@ -16,7 +16,8 @@
 #include <sys/mman.h>
 #include <string.h>
 
-#define GB4 4294967296
+// #define GB4 4294967296
+#define GB4 ((uint64_t)1 << 32)
 #define BOOK_SIZE 8
 #define BLOCK_SIZE 32
 
@@ -223,53 +224,52 @@ uint32_t vs_calloc(Mem_T *mem, uint32_t size){
  * memory accesses will be 4 bytes so that our system can be used in the UM.
  * A complete virtual memory system would have to provide a better interface
  * than this, but it will do for our purposes. */
-void set_at(Mem_T *mem, uint32_t base, uint32_t offset, uint32_t value)
-{
-    // convert v^2 address to virtual address
-    uint32_t *dest = (uint32_t*) convert_address(mem, base + offset);
-    *dest = value;
-}
+// void set_at(Mem_T *mem, uint32_t base, uint32_t offset, uint32_t value)
+// {
+//     // convert v^2 address to virtual address
+//     uint32_t *dest = (uint32_t*) convert_address(mem, base + offset);
+//     *dest = value;
+// }
 
-uint32_t get_at(Mem_T *mem, uint32_t base, uint32_t offset)
-{
-    // convert v^2 address to virtual address
-    uint32_t *src = (uint32_t*) convert_address(mem, base + offset);
-    return *src;
+// uint32_t get_at(Mem_T *mem, uint32_t base, uint32_t offset)
+// {
+//     // convert v^2 address to virtual address
+//     uint32_t *src = (uint32_t*) convert_address(mem, base + offset);
+//     return *src;
+// }
 
-}
 
+// void safe_set_at(Mem_T *mem, uint32_t base, uint32_t offset, uint32_t value)
+// {
+//     // check base is a valid base
+//     assert(!(base % 32));
 
-void safe_set_at(Mem_T *mem, uint32_t base, uint32_t offset, uint32_t value)
-{
-    // check base is a valid base
-    assert(!(base % 32));
-
-    // bounds checking: ensure user accesses memory they have permissions on
-    uint32_t spot_to_access = base + offset;
-    // uint32_t *ptr_to_spot = convert_address(base, offset);
-    uint32_t *ptr_to_spot = convert_address(mem, spot_to_access);
-    uint32_t size = ptr_to_spot[-(offset + 1)];
-    assert(offset < size);
+//     // bounds checking: ensure user accesses memory they have permissions on
+//     uint32_t spot_to_access = base + offset;
+//     // uint32_t *ptr_to_spot = convert_address(base, offset);
+//     uint32_t *ptr_to_spot = convert_address(mem, spot_to_access);
+//     uint32_t size = ptr_to_spot[-(offset + 1)];
+//     assert(offset < size);
     
-    // call set at
-    set_at(mem, base, offset, value);
-}
+//     // call set at
+//     set_at(mem, base, offset, value);
+// }
 
-uint32_t safe_get_at(Mem_T *mem, uint32_t base, uint32_t offset)
-{
-    // check base is a valid base
-    assert(!(base % 32));
+// uint32_t safe_get_at(Mem_T *mem, uint32_t base, uint32_t offset)
+// {
+//     // check base is a valid base
+//     assert(!(base % 32));
 
-    // bounds checking: ensure user accesses memory they have permissions on
-    uint32_t spot_to_access = base + offset;
-    // uint32_t *ptr_to_spot = convert_address(base, offset);
-    uint32_t *ptr_to_spot = convert_address(mem, spot_to_access);
-    uint32_t size = ptr_to_spot[-(offset + 1)];
-    assert(offset < size);
+//     // bounds checking: ensure user accesses memory they have permissions on
+//     uint32_t spot_to_access = base + offset;
+//     // uint32_t *ptr_to_spot = convert_address(base, offset);
+//     uint32_t *ptr_to_spot = convert_address(mem, spot_to_access);
+//     uint32_t size = ptr_to_spot[-(offset + 1)];
+//     assert(offset < size);
 
-    // call get at
-    return get_at(mem, base, offset);
-}
+//     // call get at
+//     return get_at(mem, base, offset);
+// }
 
 void vs_free(Mem_T *mem, uint32_t addr)
 {

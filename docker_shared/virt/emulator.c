@@ -35,6 +35,35 @@ uint32_t map_segment(uint32_t size, Mem_T *mem);
 void unmap_segment(uint32_t segment, Mem_T *mem);
 void load_segment(uint32_t index, uint32_t *zero, Mem_T *mem, uint32_t *regs, uint32_t c);
 
+/* In order to be properly fast, set_at() and get_at() need to be inlined by
+ * the compiler. These functions are defined in the driver module, and I don't
+ * know enough C to know if that is possible. So I am going to define those
+ * functions inline here for now, and figure it out later. */
+
+static uint8_t *umem = NULL;
+
+static inline void *local_convert(uint32_t addr)
+{
+    void *ptr = umem + addr;
+    return ptr;
+}
+
+static inline void set_at(Mem_T *mem, uint32_t base, uint32_t offset, uint32_t value)
+{
+    (void)mem;
+    // convert v^2 address to virtual address
+    uint32_t *dest = (uint32_t *)local_convert(base + offset);
+    *dest = value;
+}
+
+static inline uint32_t get_at(Mem_T *mem, uint32_t base, uint32_t offset)
+{
+    (void)mem;
+    // convert v^2 address to virtual address
+    uint32_t *src = (uint32_t *)local_convert(base + offset);
+    return *src;
+}
+
 int main(int argc, char *argv[])
 {
     if (argc != 2)
@@ -60,6 +89,7 @@ int main(int argc, char *argv[])
 
     uint32_t kern_size = 524288; // this is 2^19
     Mem_T *mem = init_memory_system(kern_size);
+    umem = mem->usable_mem;
 
     initialize_memory(fp, fsize + sizeof(Instruction), mem);
     
@@ -75,7 +105,7 @@ void initialize_memory(FILE *fp, size_t fsize, Mem_T *mem)
     /* NOTE: Here, fsize is already adjusted to account for the fact that each
      * UM instruction is 4 bytes. Future allocations will have to take this into
      * account. */
-    printf("We expect fsize to be 48: %zu\n", fsize);
+    // printf("We expect fsize to be 48: %zu\n", fsize);
     kern_recalloc(mem, fsize);
     uint32_t word = 0;
     int c;

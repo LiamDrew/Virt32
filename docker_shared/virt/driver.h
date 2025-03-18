@@ -37,18 +37,17 @@ void kern_memcpy(Mem_T *mem, uint32_t src_addr, uint32_t dest_addr,
  * and serve it to the program as virtual memory. */
 uint32_t vs_malloc(Mem_T *mem, uint32_t size);
 
-// /* Virtual segment calloc (vs_calloc): Same thing as vs_malloc, but zero all
-//  * the memory needed ahead of time */
+/* Virtual segment calloc (vs_calloc): Same thing as vs_malloc, but zero all
+ * the memory needed ahead of time */
 uint32_t vs_calloc(Mem_T *mem, uint32_t size);
 
-void set_at(Mem_T *mem, uint32_t base, uint32_t offset, uint32_t value);
+// void set_at(Mem_T *mem, uint32_t base, uint32_t offset, uint32_t value);
 
-uint32_t get_at(Mem_T *mem, uint32_t base, uint32_t offset);
+// uint32_t get_at(Mem_T *mem, uint32_t base, uint32_t offset);
 
+// void safe_set_at(Mem_T *mem, uint32_t base, uint32_t offset, uint32_t value);
 
-void safe_set_at(Mem_T *mem, uint32_t base, uint32_t offset, uint32_t value);
-
-uint32_t safe_get_at(Mem_T *mem, uint32_t base, uint32_t offset);
+// uint32_t safe_get_at(Mem_T *mem, uint32_t base, uint32_t offset);
 
 /* Virtual Segment Free (vs_free): 
  * Free a virtual segment for future use. */
