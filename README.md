@@ -9,7 +9,7 @@ Created by Liam Drew, Hameedah Lawal, Milo Goldstein, Jason Miller, and Yoda Erm
 Presented at JumboHack 2025 under the Mad Hacker track.
 
 ## Overview
-This thing is a memory allocator that also supports address translation
+Virt32 is a memory allocator that also supports address translation
 our own malloc(), calloc(), free(), and accessing functions.
 
 
