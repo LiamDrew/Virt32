@@ -10,12 +10,8 @@ Presented at JumboHack 2025 under the Mad Hacker track.
 
 ## Overview
 This thing is a memory allocator that also supports address translation
-our own malloc(), calloc(), free(), and accessing functions. The UM can run 
+our own malloc(), calloc(), free(), and accessing functions.
 
-Currently, this project is little more than a memory allocator. 
-
-### What is the Universal Machine?
-TODO: I think Milo should take a stab here
 
 ### Why does our Memory System make the Universal Machine faster?
 REFLECTION
@@ -30,11 +26,6 @@ specification, however, does not belong to us and is not open source.
 For a stable and consistent environment, it is recommended to run this project in a Docker
 container. However, it should also build out of the box on MacOS with the clang compiler.
 
-## Design
-TODO: Draw some nice pictures explaining how the memory system and the address translations work
-
-## Performance
-TODO: Compare performance
 
 ## Potential Improvements
 Add more bounds/safety checking
