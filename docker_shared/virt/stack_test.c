@@ -8,7 +8,7 @@ int main(int argc, char **argv)
     (void)argv;
 
     /* Stack Tests */
-    Stack *s = stack_init(10);
+    Stack_T *s = stack_init(10);
     stack_push(s, 1);
     stack_push(s, 2);
     stack_push(s, 3);

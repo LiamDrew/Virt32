@@ -7,10 +7,10 @@
 
 void* recycler_init(void)
 {
-    void* recycler = malloc(sizeof(Stack) * SIZE);
+    void* recycler = malloc(sizeof(Stack_T) * SIZE);
     for (int i = 0; i < SIZE; i++) {
-        Stack* s = stack_init(10);
-        ((Stack*)recycler)[i] = *s;
+        Stack_T* s = stack_init(10);
+        ((Stack_T*)recycler)[i] = *s;
     }
 
     return recycler;
@@ -21,7 +21,7 @@ uint32_t find_freed_segment(Mem_T *mem, uint32_t size)
     uint32_t index = get_idx_from_alloc_size(size);
     assert(index < SIZE);
     
-    Stack* s = &((Stack*)mem->recycler)[index];
+    Stack_T* s = &((Stack_T*)mem->recycler)[index];
 
     /* if no segment of size 'size', check next bucket */
     if (stack_is_empty(s)) {
@@ -49,8 +49,8 @@ void free_segment(Mem_T *mem, uint32_t seg_addr)
 
     int index = ((seg_cap + 8) / 32) - 1;
     //printf("index: %d\n", index);
-    stack_push(&((Stack*)(mem->recycler))[index], seg_addr);
-    if (!stack_is_empty(&((Stack*)(mem->recycler))[3])) {
+    stack_push(&((Stack_T*)(mem->recycler))[index], seg_addr);
+    if (!stack_is_empty(&((Stack_T*)(mem->recycler))[3])) {
         //printf("inserted segment for 128\n");
     }
 

@@ -1,9 +1,9 @@
 #include "stack.h"
 #include <assert.h>
 
-Stack* stack_init(uint32_t size)
+Stack_T* stack_init(uint32_t size)
 {
-    Stack* s = malloc(sizeof(Stack));
+    Stack_T* s = malloc(sizeof(Stack_T));
     s->stack = malloc(size * sizeof(uint32_t));
     s->capacity = size;
     s->size = 0;
@@ -11,12 +11,12 @@ Stack* stack_init(uint32_t size)
     return s;
 }
 
-uint32_t stack_top(Stack *s)
+uint32_t stack_top(Stack_T *s)
 {
     return s->stack[s->size - 1];
 }
 
-void stack_push(Stack *s, uint32_t elem)
+void stack_push(Stack_T *s, uint32_t elem)
 {
     assert(s != NULL);
     if (s->size == s->capacity) {
@@ -27,7 +27,7 @@ void stack_push(Stack *s, uint32_t elem)
     s->size++;
 }
 
-void stack_expand(Stack* s)
+void stack_expand(Stack_T* s)
 {
     s->capacity = s->capacity * 2;
     uint32_t* temp = malloc(s->capacity * sizeof(uint32_t));
@@ -39,19 +39,19 @@ void stack_expand(Stack* s)
     s->stack = temp;
 }
 
-uint32_t stack_pop(Stack* s)
+uint32_t stack_pop(Stack_T* s)
 {
     uint32_t top = s->stack[s->size - 1];
     s->size--;
     return top;
 }
 
-bool stack_is_empty(Stack* s)
+bool stack_is_empty(Stack_T* s)
 {
     return s->size == 0;
 }
 
-void stack_free(Stack* s)
+void stack_free(Stack_T* s)
 {
     free(s);
 }

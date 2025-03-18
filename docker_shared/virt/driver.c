@@ -5,6 +5,9 @@
  * Implement the virtual memory system drivers and interface.
  */
 
+////////////////////////////////////////
+/* bad practice. All of our includes should go in the .h, unless we need to use
+ * some of them 'secretly' (which is fine, it needs to be purposeful, though)*/
 #include "driver.h"
 #include "recycler.h"
 #include <stdlib.h>
@@ -17,7 +20,12 @@
 #define BOOK_SIZE 8
 #define BLOCK_SIZE 32
 
-/* This allows us to keep memory state private to the driver module */
+/* This allows us to keep memory state private to the driver module */ 
+////////////////////////////////////////
+/* I disagree. This allows us to keep a specific instance of a memory state
+ * struct private to the driver file, in theory. In practice, we end up 
+ * returning this specific struct to the user. This, alongside mem_state.h 
+ * containing the struct actually makes this suuuuuper public. */
 static Mem_T *mem_state = NULL;
 
 /* Convert address is private to this module */
@@ -28,7 +36,7 @@ Mem_T* init_memory_system(uint32_t kernel_size)
     /* Safely initialize the memory state */
     assert(mem_state == NULL);
     mem_state = (Mem_T*) malloc(sizeof(Mem_T));
-    assert(mem_state != NULL);
+    assert(mem_state);
 
     /* This mmap allocates 4GB of emulated physical memory.
      * Ideally, we would protect this memory by giving the "user" program no 
@@ -46,28 +54,37 @@ Mem_T* init_memory_system(uint32_t kernel_size)
     // printf("Start of mem: %p\n", mem_state->mem);
     // printf("Start of usable mem: %p\n", mem_state->usable_mem);
 
-    mem_state->kernel_virtual_size = kernel_size;
+    // The kernel virtual size should be 8 bytes smaller than the physical size
+    // 
+    mem_state->kernel_virtual_size = kernel_size - 8;
     mem_state->begin_unused = kernel_size;
 
     return mem_state;
 }
 
+void terminate_memory_system(Mem_T *mem)
+{
+    // Free the huge page
+    munmap(mem->mem, GB4);
+
+    // TODO: also need to free the recycler
+}
+
 uint32_t kern_recalloc(Mem_T *mem, uint32_t size)
 {
-    // printf("Trying to alloc kernel memory\n");
+    //printf("Kernel Recalloc\n");
+    //printf("User requesting %u bytes. There are %u bytes available\n", size, mem->kernel_virtual_size);
+
     // Assert that the kernel has enough protected space for us to use
     assert(mem->kernel_virtual_size >= size);
 
-    void *void_mem_start = mem->mem;
-    uint32_t *mem_start = (uint32_t*)void_mem_start;
-
-    // This is redundant but I will keep it in for clarity
+    // Update the first 8 bytes of "physical" memory with kernel bookkeeping
+    uint32_t *mem_start = (uint32_t*)mem->mem;
     *mem_start = mem->kernel_virtual_size;
     mem_start++;
-    // give the user the size that they requested
-    *mem_start = size;
+    *mem_start = size;  // allow the kernel to use only the memory it requested
 
-    // zero out all the bytes the user wants
+    // zero out all the bytes the user want
     memset(mem->usable_mem, 0, size);
 
     // printf("Successfully allocated kernel memory\n");

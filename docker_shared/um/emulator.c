@@ -50,7 +50,8 @@ static inline bool exec_instr(Instruction word, Instruction **pp,
                               uint32_t *regs, uint32_t *zero);
 uint32_t map_segment(uint32_t size);
 void unmap_segment(uint32_t segment);
-void load_segment(uint32_t index, uint32_t *zero);
+// void load_segment(uint32_t index, uint32_t *zero);
+void load_segment(uint32_t index, uint32_t *zero, uint32_t *regs, uint32_t c);
 
 int main(int argc, char *argv[])
 {
@@ -153,12 +154,24 @@ void handle_instructions(uint32_t *zero)
     handle_stop();
 }
 
+void print_registers(uint32_t *regs)
+{
+    printf("\n______\n");
+    for (int i = 0; i < 8; i++)
+    {
+        printf("Register %d is %u\n", i, regs[i]);
+    }
+    printf("______\n");
+}
+
 static inline bool exec_instr(Instruction word, Instruction **pp,
                               uint32_t *regs, uint32_t *zero)
 {
     (void)zero;
     uint32_t a = 0, b = 0, c = 0, val = 0;
     uint32_t opcode = word >> 28;
+
+    // print_registers(regs);
 
     /* Load Value */
     if (__builtin_expect(opcode == 13, 1))
@@ -194,7 +207,7 @@ static inline bool exec_instr(Instruction word, Instruction **pp,
     /* Load Segment */
     else if (__builtin_expect(opcode == 12, 0))
     {
-        load_segment(regs[b], zero);
+        load_segment(regs[b], zero, regs, c);
         *pp = segment_sequence[0] + regs[c];
     }
 
@@ -320,16 +333,27 @@ void unmap_segment(uint32_t segment)
     recycled_ids[rec_size++] = segment;
 }
 
-void load_segment(uint32_t index, uint32_t *zero)
+// void load_segment(uint32_t index, uint32_t *zero)
+void load_segment(uint32_t index, uint32_t *zero, uint32_t *regs, uint32_t c)
 {
     (void)zero;
+    
     if (index > 0)
     {
         uint32_t copied_seq_size = segment_lengths[index];
+
+        printf("New segment size needs to be %lu\n", copied_seq_size * sizeof(uint32_t));
 
         uint32_t *new_zero = malloc(copied_seq_size * sizeof(uint32_t));
         memcpy(new_zero, segment_sequence[index],
                copied_seq_size * sizeof(uint32_t));
         segment_sequence[0] = new_zero;
+
+        // Added for debugging
+        print_registers(regs);
+
+        printf("The index here is %u\n", regs[c]);
+
+        // assert(false);
     }
 }

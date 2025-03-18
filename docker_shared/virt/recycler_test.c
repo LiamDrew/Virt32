@@ -19,7 +19,7 @@ int main(int argc, char **argv)
 
     mem->recycler = recycler_init();
 
-    Stack *s = &((Stack*)mem->recycler)[0];
+    Stack_T *s = &((Stack_T*)mem->recycler)[0];
     assert(stack_is_empty(s));
     free_segment(mem, 32);
     assert(!stack_is_empty(s));
@@ -33,7 +33,7 @@ int main(int argc, char **argv)
     // Finding freed segment at the next index
     assert(stack_is_empty(s));
     free_segment(mem, 64);
-    s = &((Stack*)mem->recycler)[1];
+    s = &((Stack_T*)mem->recycler)[1];
 
     assert(!stack_is_empty(s));
     assert(stack_top(s) == 56);

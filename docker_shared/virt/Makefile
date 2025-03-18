@@ -1,7 +1,7 @@
 
 # I am a little opinionated about this, but I'm open to having my mind changed:
 # I want to use the clang compiler because it's natively supported by MacOS,
-# which does all it's low level stuff with the LLVM toolchain.
+# which does all its low level stuff with the LLVM toolchain.
 
 CC = clang
 CFLAGS = -g -Wall -Wextra -Werror -Wpedantic -O2
