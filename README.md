@@ -3,7 +3,7 @@
 
 A 32-bit userspace virtual memory system designed to accelerate 32-bit to 64-bit
 address translations for the Universal Machine, a 32-bit virtual machine 
-with a RISC-style instruction set. 
+emulating a 14-instruction, RISC-style architecture. 
 
 Created by Liam Drew, Hameedah Lawal, Milo Goldstein, Jason Miller, and Yoda Ermias.  
 Presented at JumboHack 2025 under the Mad Hacker track.
