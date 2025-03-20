@@ -63,6 +63,11 @@ Mem_T* init_memory_system(uint32_t kernel_size)
      * same, so we are enforcing security through abstraction. This is a less
      * than ideal solution and we acknowledge this. We need hardware support to
      * do this properly. */
+    
+    /* NOTE: on linux, Map populate doesn't help. It just incurs more overhead
+     * up front. Again, the right solution to this problem is the concurrent
+     * recycler */
+
     void *phys = mmap(NULL, GB4, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
     usable = (uint8_t*)phys + BOOK_SIZE;
@@ -194,9 +199,11 @@ uint32_t vs_calloc(uint32_t size){
     
     // convert the virtual address to physical
     void *ptr = convert_address2(addr);
+    (void)ptr;
 
+    // Is this not necessary?
     // memset the physical memory
-    memset(ptr, 0, size);
+    // memset(ptr, 0, size);
 
     // return the virtual address
     return addr;
