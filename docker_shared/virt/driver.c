@@ -9,11 +9,12 @@
 /* bad practice. All of our includes should go in the .h, unless we need to use
  * some of them 'secretly' (which is fine, it needs to be purposeful, though)
  
- * Liam -> I disagree with this, except for possibly recycler.h. I generally
+ *  I disagree with this, except for possibly recycler.h. I generally
  * try to keep includes out of header files as much as possible, and only do so
  * when a type that is defined in another header file is needed as part of the
  * interface (such as an interface using uint32_ts, for example). I see the case
- * for the recycler, though, and could probably be persuaded on that front. */
+ * for the recycler, though, and could probably be persuaded on that front. 
+ * -Liam */
 #include "driver.h"
 #include "recycler.h"
 #include <stdlib.h>
@@ -43,14 +44,10 @@ uint8_t *usable = NULL;
  * addressed soon (but not right now) */
 static inline void *convert_address2(uint32_t addr);
 
-// NOTE: this function is intended to be private to this module. We don't want
-// clients accessing 64 bit addresses
+/* NOTE: this function is intended to be private to this module. We don't want
+ * clients accessing 64 bit addresses */
 static inline void *convert_address2(uint32_t addr)
 {
-    // void *seg = usable;
-    // void *ptr = ((char *)seg + addr);
-    // printf("Address %u has been converted to pointer %p\n", addr, ptr);
-
     void *ptr = usable + addr;
     return ptr;
 }
@@ -60,21 +57,10 @@ Mem_T* init_memory_system(uint32_t kernel_size)
     /* Safely initialize the memory state */
     assert(mem == NULL);
     mem = (Mem_T*) malloc(sizeof(Mem_T));
-    assert(mem != NULL); // Milo no likey, but I think it improves readability
+    assert(mem != NULL);
 
-    /* This mmap allocates 4GB of emulated physical memory.
-     * Ideally, we would protect this memory by giving the "user" program no 
-     * permissions and giving our "kernel" read and write privelege. However,
-     * as far as the real OS is concerned, our permission levels are one and the
-     * same, so we are enforcing security through abstraction. This is a less
-     * than ideal solution and we acknowledge this. We need hardware support to
-     * do this properly. */
-    
-    /* NOTE: on linux, Map populate doesn't help. It just incurs more overhead
-     * up front. Again, the right solution to this problem is making the
-     * recycler fast and functional */
-
-    void *phys = mmap(NULL, GB4, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    void *phys = mmap(NULL, GB4, PROT_READ | PROT_WRITE, 
+                      MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
     usable = (uint8_t*)phys + BOOK_SIZE;
     
@@ -82,9 +68,6 @@ Mem_T* init_memory_system(uint32_t kernel_size)
     mem->mem = phys;
     mem->usable_mem = (void*)((char*)phys + BOOK_SIZE);
     mem->recycler = recycler_init();
-
-    // printf("Start of mem: %p\n", mem_state->mem);
-    // printf("Start of usable mem: %p\n", mem_state->usable_mem);
 
     /* The kernel virtual size is 8 bytes smaller than its physical size */
     mem->kernel_virtual_size = kernel_size - BOOK_SIZE;
@@ -102,43 +85,36 @@ void terminate_memory_system(void)
     // TODO: also need to free the recycler
 }
 
-uint32_t kern_recalloc(uint32_t size)
+uint32_t kern_realloc(uint32_t size)
 {
-    //printf("Kernel Recalloc\n");
-    //printf("User requesting %u bytes. There are %u bytes available\n", size, mem->kernel_virtual_size);
+    /* printf("Kernel Recalloc: User requesting %u bytes. 
+     * There are %u bytes available\n", size, mem->kernel_virtual_size); */
 
-    // Assert that the kernel has enough protected space for us to use
+    /* Ensure the kernel has enough space to fill the allocation */
     assert(mem->kernel_virtual_size >= size);
 
-    // Update the first 8 bytes of "physical" memory with kernel bookkeeping
+    /* Update the first 8 bytes of virtual memory with kernel bookkeeping */
     uint32_t *mem_start = (uint32_t*)mem->mem;
     *mem_start = mem->kernel_virtual_size;
     mem_start++;
-    *mem_start = size;  // allow the kernel to use only the memory it requested
+    *mem_start = size;
 
-    // zero out all the bytes the user want
-    memset(mem->usable_mem, 0, size);
-
-    return 0; /* The base kernel address is always 0. */
+    /* The base kernel virtual address is always 0. */
+    return 0; 
 }
 
 
-void kern_memcpy(uint32_t src_addr, uint32_t dest_addr, uint32_t copy_size)
+void kern_memcpy(uint32_t src_addr, uint32_t copy_size)
 {
-    // only allow memcpy from user space to kernel space
-    // TODO: build some safety into this
+    /* This function will overwrite the kernel memory (segment 0). The user
+     * does not control the destination this memory is copied to; the kernel
+     * does. */
 
-    assert(dest_addr == 0);
-    
-    // get real source and dest addresses
+    /* Get real source and destination addresses */
     void *real_src = convert_address(mem, src_addr);
-    void *real_dest = convert_address(mem, dest_addr);
-
-    printf("real_src is %p: real_src\n", real_src);
-    printf("real_src is %p: real_dest\n", real_dest);
-    printf("Copy size is %u\n", copy_size);
-
-    // memcpy(real_dest, real_src, copy_size);
+    void *real_dest = convert_address(mem, 0);
+    memcpy(real_dest, real_src, copy_size);
+    return;
 }
 
 uint32_t vs_malloc(uint32_t size)
@@ -186,20 +162,8 @@ uint32_t vs_malloc(uint32_t size)
     return user_start;
 }
 
-uint32_t vs_calloc(uint32_t size){
-
-    /* This will be a wrapper over vs_malloc that calls memset( , 0, ) after
-     * allocation. I want to explicitly define this now because I think a
-     * segment daemon has the potential to optimize the way that we zero
-     * segments. No guarantees, but I don't want the application to worry about
-     * this step when we (the engineers) may be able to do it better behind the
-     * scenes. Follow the KISS principle: get the interface right, fix the
-     * implementation later.
-     * 
-     * There is certainly a more efficient way to do this. We will optimize
-     * this later.
-     */
-
+uint32_t vs_calloc(uint32_t size)
+{
     // do the malloc in the first place
     uint32_t addr = vs_malloc(size);
     
@@ -207,7 +171,9 @@ uint32_t vs_calloc(uint32_t size){
     void *ptr = convert_address2(addr);
     (void)ptr;
 
-    // Is this not necessary?
+    // NOTE: zeroing out the memory is only necessary when recycling a segment
+    // MAP_ANONYMOUS guarantees that all carved memory will be 0
+
     // memset the physical memory
     // memset(ptr, 0, size);
 
@@ -225,8 +191,6 @@ void vs_free(uint32_t addr)
 }
 
 
-// These functions will call the dangerous ones, which we will eventually want 
-// to make the program fly
 
 /*
  * Important design choice: since we are pretending to be the "kernel", but we
@@ -287,12 +251,4 @@ void vs_free(uint32_t addr)
 //     return get_at(mem, base, offset);
 // }
 
-/* 
- * TO BE REVISITED: Interesting architecture problem
- * If we make the segment daemon concurrent, will it be able to zero memory 
- * segments for us before we need them? This could be a really hard problem.
- * We may not get to this on saturday */
-// void init_segment_daemon(void)
-// {
-//     return;
-// }
+

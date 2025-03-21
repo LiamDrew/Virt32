@@ -21,6 +21,7 @@
 
 #define NUM_REGISTERS 8
 #define POWER ((uint64_t)1 << 32) // for preventing overflow with add and div
+#define KERN_SIZE ((uint32_t)1 << 19) // this is 2^19
 typedef uint32_t Instruction;
 
 void initialize_memory(FILE *fp, size_t fsize, uint8_t *umem);
@@ -40,15 +41,9 @@ void load_segment(uint32_t index, uint8_t *umem);
  * know enough C to know if that is possible. So I am going to define those
  * functions inline here for now, and figure it out later. */
 
-/* We can consider having these defined as globals, but they are needed so much
- * I think it makes sense to make them local variables */
 
-// static uint8_t *umem = NULL;
-// extern uint8_t *usable;
-
-static inline void *my_convert_address(uint8_t *umem, uint32_t addr)
+static inline void *um_convert_address(uint8_t *umem, uint32_t addr)
 {
-    // void *out = umem + addr;
     return umem + addr;
 }
 
@@ -83,19 +78,12 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    /* NOTE: For some reason, this is returning that the size of the file is 4
-     * bytes larger than we think it should be it.*/
-
-    /* Demand-zeroing a ton of memory pages is slow no matter how you slice it.
-     * The best thing we can do is recycle pages efficiently so that the OS
-     * doesn't */
     size_t fsize = 0;
     struct stat file_stat;
     if (stat(argv[1], &file_stat) == 0)
         fsize = file_stat.st_size;
 
-    uint32_t kern_size = 524288; // this is 2^19
-    Mem_T *mem = init_memory_system(kern_size);
+    Mem_T *mem = init_memory_system(KERN_SIZE);
     uint8_t *umem = mem->usable_mem;
 
     initialize_memory(fp, fsize + sizeof(Instruction), umem);
@@ -109,10 +97,10 @@ int main(int argc, char *argv[])
 
 void initialize_memory(FILE *fp, size_t fsize, uint8_t *umem)
 {
-    /* NOTE: Here, fsize is already adjusted to account for the fact that each
+    /* Here, fsize is already adjusted to account for the fact that each
      * UM instruction is 4 bytes. Future allocations will have to take this into
      * account. */
-    kern_recalloc(fsize);
+    kern_realloc(fsize);
     uint32_t word = 0;
     int c;
     int i = 0;
@@ -168,8 +156,6 @@ void handle_instructions(uint8_t *umem)
     while (!exit)
     {
         word = get_at(umem, 0 + pc * sizeof(uint32_t));
-        // uint32_t opcode = word >> 28;
-        // printf("Getting word at segment 0 at index %u and opcode is %u\n", pc, opcode);
         pc++;
         exit = exec_instr(word, regs, umem, &pc);
     }
@@ -190,15 +176,12 @@ static inline bool exec_instr(Instruction word, uint32_t *regs, uint8_t *umem,
     uint32_t a = 0, b = 0, c = 0, val = 0;
     uint32_t opcode = word >> 28;
 
-    // printf("Opcode is %u\n", opcode);
-
     /* Load Value */
     if (__builtin_expect(opcode == 13, 1))
     {
         a = (word >> 25) & 0x7;
         val = word & 0x1FFFFFF;
         regs[a] = val;
-        // fprintf(stderr, "Load Value\n");
         return false;
     }
 
@@ -321,42 +304,15 @@ void unmap_segment(uint32_t segment)
 
 void load_segment(uint32_t index, uint8_t *umem)
 {
-    // Return immediately if loading elsewhere in the zero segment
-    if (index == 0) return;
+    /* Return immediately if loading elsewhere in the zero segment */
+    if (index == 0)
+        return;
 
-    // NOTE: We need to get this right to get sandmark to run
-    // assert(false);
+    /* Get the size of the segment we want to duplicate */
+    uint32_t *seg_addr = (uint32_t *)um_convert_address(umem, index);
+    uint32_t copy_size = seg_addr[-1];
 
-    /* I am intentionally leaving this broken. I need to do a much more careful
-     * job of going through and making sure that I'm changing interfaces to be
-     * what I want*/
-
-    // added for debugging
-    //print_registers(regs);
-    //printf("Index here is %u\n", regs[c]);
-
-    // get the size of the segment
-    // printf("Seg addr is %p\n", seg_addr);
-    void *seg_addr = my_convert_address(umem, index);
-    // void *seg_addr = NULL; // need a better plan here
-    uint32_t *usable_kern_addr = (uint32_t *)my_convert_address(umem, 0);
-    // uint32_t *usable_kern_addr = NULL;
-    // get segment size
-    uint32_t *my_addr = seg_addr;
-    uint32_t copy_size = my_addr[-1];
-
-    kern_recalloc(copy_size);
-
-    // TODO: Need to correctly duplicate the segment we want into the kernel space
-
-    // printf("Copying segment of size %u\n", copy_size);
-    uint32_t loop_size = copy_size / 4;
-    for (uint32_t i = 0; i < loop_size; i++) {
-        uint32_t my_temp = my_addr[i];
-        uint32_t temp_opcode = my_temp >> 28;
-        (void)temp_opcode;
-
-        // printf("Getting word at segment 0 at index %u with opcode: %u\n", i, temp_opcode);
-        usable_kern_addr[i] = my_addr[i];
-    }
+    /* Reallocate the kernel size and copy the new segment into it */
+    kern_realloc(copy_size);
+    kern_memcpy(index, copy_size);
 }

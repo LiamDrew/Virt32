@@ -7,6 +7,7 @@ void stack_expand(Stack_T* s);
 
 Stack_T* stack_init(uint32_t size)
 {
+    assert(size > 0);
     Stack_T* s = malloc(sizeof(Stack_T));
     s->stack = malloc(size * sizeof(uint32_t));
     s->capacity = size;
@@ -17,6 +18,7 @@ Stack_T* stack_init(uint32_t size)
 
 uint32_t stack_top(Stack_T *s)
 {
+    assert(s->size > 0);
     return s->stack[s->size - 1];
 }
 
@@ -45,6 +47,7 @@ void stack_expand(Stack_T* s)
 
 uint32_t stack_pop(Stack_T* s)
 {
+    assert(s->size > 0);
     uint32_t top = s->stack[s->size - 1];
     s->size--;
     return top;
@@ -57,5 +60,6 @@ bool stack_is_empty(Stack_T* s)
 
 void stack_free(Stack_T* s)
 {
+    free(s->stack);
     free(s);
 }

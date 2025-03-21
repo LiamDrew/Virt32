@@ -19,18 +19,17 @@ Mem_T *init_memory_system(uint32_t kernel_size); //checked, 2 mem_state vars on 
 
 void terminate_memory_system(void);
 
-/* Kernel Allocator (kern_recalloc):
+/* Kernel Allocator (kern_remalloc):
  * Overwrite whatever is in the zero segment and initialize all requested
  * memory to zero. In a real OS, the kernel memory management needs to be
  * significantly more complicated, but since we are designing this memory system
  * for use in a very simple virtual machine. */
-uint32_t kern_recalloc(uint32_t size);
+uint32_t kern_realloc(uint32_t size);
 
 /* Kernel Memory Copy (kern_memcpy):
  * Provides users of the memory system with an interface to copy data in and
  * out of kernel space. */
-void kern_memcpy(uint32_t src_addr, uint32_t dest_addr, 
-                 uint32_t copy_size);
+void kern_memcpy(uint32_t src_addr, uint32_t copy_size);
 
 /* Virtual Segment Malloc (vs_malloc): 
  * Carve out a segment of physical memory 
