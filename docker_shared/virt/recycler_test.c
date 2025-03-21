@@ -7,19 +7,27 @@
 #include "stack.h"
 #include "mem_state.h"
 
-int main(int argc, char **argv)
-{
-    (void)argc;
-    (void)argv;
+void general_test(void);
 
+int main(void)
+{
+    general_test();
+}
+
+void general_test(void)
+{
     /* Recycler Tests */
+
+    // TODO: this needs to get all fixed up. Many things about the interface
+    // have changed since these tests were written.
+    
     uint32_t kernel_size = 100000;
     Mem_T *mem = init_memory_system(kernel_size);
     (void)mem;
 
     mem->recycler = recycler_init();
 
-    Stack_T *s = &((Stack_T*)mem->recycler)[0];
+    Stack_T *s = &((Stack_T *)mem->recycler)[0];
     assert(stack_is_empty(s));
     free_segment(mem, 32);
     assert(!stack_is_empty(s));
@@ -33,7 +41,7 @@ int main(int argc, char **argv)
     // Finding freed segment at the next index
     assert(stack_is_empty(s));
     free_segment(mem, 64);
-    s = &((Stack_T*)mem->recycler)[1];
+    s = &((Stack_T *)mem->recycler)[1];
 
     assert(!stack_is_empty(s));
     assert(stack_top(s) == 56);
@@ -47,6 +55,4 @@ int main(int argc, char **argv)
     assert((int)segment == -1);
 
     stack_free(s);
-
-    // (void)recycler;
 }

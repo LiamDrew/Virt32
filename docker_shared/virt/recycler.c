@@ -3,14 +3,16 @@
 #include <stdio.h>
 #include <assert.h>
 
+/* NOTE: this is not quite right. This needs to be thought through again */
 #define SIZE 32769 /* User can allocate at most 1GB */
 
-void* recycler_init(void)
+Stack_T *recycler_init(void)
 {
-    void* recycler = malloc(sizeof(Stack_T) * SIZE);
-    for (int i = 0; i < SIZE; i++) {
-        Stack_T* s = stack_init(10);
-        ((Stack_T*)recycler)[i] = *s;
+    Stack_T *recycler = malloc(sizeof(Stack_T) * SIZE);
+    for (int i = 0; i < SIZE; i++)
+    {
+        Stack_T *s = stack_init(10);
+        recycler[i] = *s;
     }
 
     return recycler;
@@ -19,6 +21,10 @@ void* recycler_init(void)
 uint32_t find_freed_segment(Mem_T *mem, uint32_t size)
 {
     uint32_t index = get_idx_from_alloc_size(size);
+    
+    printf("Index is %u, size is %u\n", index, size);
+
+    assert(false);
     assert(index < SIZE);
     
     Stack_T* s = &((Stack_T*)mem->recycler)[index];
@@ -35,7 +41,7 @@ uint32_t find_freed_segment(Mem_T *mem, uint32_t size)
 /* Assuming that the seg_addr received is already processed */
 void free_segment(Mem_T *mem, uint32_t seg_addr)
 {
-    uint32_t bk_addr = seg_addr - 8;
+    uint32_t bk_addr = seg_addr - BOOK_SIZE;
 
     /* Grab segment size from bookkeeping */
     // uint32_t begin_open = mem->begin_unused;

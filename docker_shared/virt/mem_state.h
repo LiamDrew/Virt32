@@ -1,21 +1,38 @@
 #ifndef MEM_STATE_H
 #define MEM_STATE_H
 
-#include <stdint.h>
-
 #define BOOK_SIZE 8
 #define MIN_SEG_SIZE 32
+
+#include <stdint.h>
 
 typedef struct Mem_T {
     void *mem;              // pointer to the begining of a 4GB memory segment
     void *usable_mem;       // pointer to the begining of the usable memory
     void *recycler;         // data structure holding the free segment tags/sizes
+
+    // I am going to explicitly define the recycler as an array of Stack_Ts
+    // Stack_T *recycler;
     uint32_t kernel_virtual_size;   // kernel_size 
     uint32_t begin_unused;
 } Mem_T;
 
-uint32_t get_idx_from_alloc_size(uint32_t size);
-/* Convert address is private to this module */
-void *convert_address(Mem_T *mem, uint32_t addr);
+// uint32_t get_idx_from_alloc_size(uint32_t size);
+
+/* Including the full definition in the header file so the compiler can inline 
+ * his function across modules */
+inline void *convert_address(uint8_t *umem, uint32_t addr)
+{
+    return umem + addr;
+}
+
+// based on the size of the segment we want, calculate the index of the queue
+// using the log and bitshifts
+inline uint32_t get_idx_from_alloc_size(uint32_t size)
+{
+    // Will allocate 1 block when it gets an exact fit
+    uint32_t num_blocks = ((size + BOOK_SIZE - 1) / 32);
+    return num_blocks;
+}
 
 #endif

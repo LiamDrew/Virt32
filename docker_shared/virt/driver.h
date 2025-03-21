@@ -15,7 +15,7 @@
 // void *convert_address(Mem_T *mem, uint32_t addr);
 
 /* Initialize the virtual memory system */
-Mem_T *init_memory_system(uint32_t kernel_size); //checked, 2 mem_state vars on lookout
+uint8_t *init_memory_system(uint32_t kernel_size); //checked, 2 mem_state vars on lookout
 
 void terminate_memory_system(void);
 
@@ -40,9 +40,17 @@ uint32_t vs_malloc(uint32_t size);
  * the memory needed ahead of time */
 uint32_t vs_calloc(uint32_t size);
 
-// void set_at(Mem_T *mem, uint32_t base, uint32_t offset, uint32_t value);
+inline void set_at(uint8_t *umem, uint32_t addr, uint32_t value)
+{
+    uint32_t *dest = convert_address(umem, addr);
+    *dest = value;
+}
 
-// uint32_t get_at(Mem_T *mem, uint32_t base, uint32_t offset);
+inline uint32_t get_at(uint8_t *umem, uint32_t addr)
+{
+    uint32_t *src = convert_address(umem, addr);
+    return *src;
+}
 
 // void safe_set_at(Mem_T *mem, uint32_t base, uint32_t offset, uint32_t value);
 

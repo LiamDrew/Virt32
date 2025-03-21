@@ -36,32 +36,6 @@ uint32_t map_segment(uint32_t size);
 void unmap_segment(uint32_t segmentm);
 void load_segment(uint32_t index, uint8_t *umem);
 
-/* In order to be properly fast, set_at() and get_at() need to be inlined by
- * the compiler. These functions are defined in the driver module, and I don't
- * know enough C to know if that is possible. So I am going to define those
- * functions inline here for now, and figure it out later. */
-
-
-static inline void *um_convert_address(uint8_t *umem, uint32_t addr)
-{
-    return umem + addr;
-}
-
-
-static inline void set_at(uint8_t *umem, uint32_t addr, uint32_t value)
-{
-    // convert v^2 address to virtual address
-    uint32_t *dest = (uint32_t *)(umem + addr);
-    *dest = value;
-}
-
-static inline uint32_t get_at(uint8_t *umem, uint32_t addr)
-{
-    // convert v^2 address to virtual address
-    uint32_t *src = (uint32_t *)(umem + addr);
-    return *src;
-}
-
 int main(int argc, char *argv[])
 {
     if (argc != 2)
@@ -83,8 +57,7 @@ int main(int argc, char *argv[])
     if (stat(argv[1], &file_stat) == 0)
         fsize = file_stat.st_size;
 
-    Mem_T *mem = init_memory_system(KERN_SIZE);
-    uint8_t *umem = mem->usable_mem;
+    uint8_t *umem = init_memory_system(KERN_SIZE);
 
     initialize_memory(fp, fsize + sizeof(Instruction), umem);
     
@@ -309,7 +282,7 @@ void load_segment(uint32_t index, uint8_t *umem)
         return;
 
     /* Get the size of the segment we want to duplicate */
-    uint32_t *seg_addr = (uint32_t *)um_convert_address(umem, index);
+    uint32_t *seg_addr = (uint32_t *)convert_address(umem, index);
     uint32_t copy_size = seg_addr[-1];
 
     /* Reallocate the kernel size and copy the new segment into it */
