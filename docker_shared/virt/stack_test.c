@@ -2,13 +2,20 @@
 #include <stdint.h>
 #include "stack.h"
 
-int main(int argc, char **argv)
-{
-    (void)argc;
-    (void)argv;
+void general_use(void);
 
-    /* Stack Tests */
+int main(void)
+{
+    general_use();
+}
+
+/* Stack Tests */
+
+/* General Use */
+void general_use(void)
+{
     Stack_T *s = stack_init(10);
+
     stack_push(s, 1);
     stack_push(s, 2);
     stack_push(s, 3);
@@ -34,3 +41,9 @@ int main(int argc, char **argv)
 
     stack_free(s);
 }
+
+/* Try to pop from empty */
+
+/* Insert, remove all, insert more */
+
+/* Insert 1000 elems */

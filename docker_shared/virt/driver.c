@@ -7,7 +7,13 @@
 
 ////////////////////////////////////////
 /* bad practice. All of our includes should go in the .h, unless we need to use
- * some of them 'secretly' (which is fine, it needs to be purposeful, though)*/
+ * some of them 'secretly' (which is fine, it needs to be purposeful, though)
+ 
+ * Liam -> I disagree with this, except for possibly recycler.h. I generally
+ * try to keep includes out of header files as much as possible, and only do so
+ * when a type that is defined in another header file is needed as part of the
+ * interface (such as an interface using uint32_ts, for example). I see the case
+ * for the recycler, though, and could probably be persuaded on that front. */
 #include "driver.h"
 #include "recycler.h"
 #include <stdlib.h>
@@ -65,8 +71,8 @@ Mem_T* init_memory_system(uint32_t kernel_size)
      * do this properly. */
     
     /* NOTE: on linux, Map populate doesn't help. It just incurs more overhead
-     * up front. Again, the right solution to this problem is the concurrent
-     * recycler */
+     * up front. Again, the right solution to this problem is making the
+     * recycler fast and functional */
 
     void *phys = mmap(NULL, GB4, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 

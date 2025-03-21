@@ -1,5 +1,9 @@
 #include "stack.h"
 #include <assert.h>
+#include <stdlib.h>
+
+/* stack_expand() is private to the stack module. */
+void stack_expand(Stack_T* s);
 
 Stack_T* stack_init(uint32_t size)
 {

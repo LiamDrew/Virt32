@@ -85,6 +85,10 @@ int main(int argc, char *argv[])
 
     /* NOTE: For some reason, this is returning that the size of the file is 4
      * bytes larger than we think it should be it.*/
+
+    /* Demand-zeroing a ton of memory pages is slow no matter how you slice it.
+     * The best thing we can do is recycle pages efficiently so that the OS
+     * doesn't */
     size_t fsize = 0;
     struct stat file_stat;
     if (stat(argv[1], &file_stat) == 0)
