@@ -35,6 +35,7 @@ inline Stack_T stack_push(Stack_T s, uint32_t elem)
 {
     if (s.size == s.capacity)
     {
+        /* Expand the stack */
         s.capacity *= 2;
         uint32_t *temp = malloc(s.capacity * sizeof(uint32_t));
         for (uint32_t i = 0; i < s.size; i++)
@@ -67,40 +68,5 @@ inline void stack_free(Stack_T *s)
     free(s->stack);
     free(s);
 }
-
-
-// Old stuff
-
-// Stack_T* stack_init(uint32_t size);
-// void stack_push(Stack_T *s, uint32_t elem);
-// uint32_t stack_pop(Stack_T *s);
-// uint32_t stack_top(Stack_T *s);
-// void stack_free(Stack_T *s);
-// bool stack_is_empty(Stack_T *s);
-
-// extern inline Stack_T stack_init(uint32_t size);
-
-// extern inline Stack_T stack_push(Stack_T s, uint32_t elem);
-
-// extern inline uint32_t stack_pop(Stack_T *s);
-
-// extern inline uint32_t stack_top(Stack_T s);
-
-// extern inline bool stack_is_empty(Stack_T s);
-
-// extern inline void stack_free(Stack_T *s);
-
-// void stack_expand(Stack_T *s)
-// {
-//     s->capacity = s->capacity * 2;
-//     uint32_t *temp = malloc(s->capacity * sizeof(uint32_t));
-//     for (uint32_t i = 0; i < s->size; i++)
-//     {
-//         temp[i] = s->stack[i];
-//     }
-
-//     free(s->stack);
-//     s->stack = temp;
-// }
 
 #endif 

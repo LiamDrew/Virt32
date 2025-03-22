@@ -6,23 +6,26 @@
  */
 
 #include "driver.h"
-#include "recycler.h"
-#include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
-#include <sys/mman.h>
-#include <string.h>
+// #include "recycler.h"
+// #include <stdlib.h>
+// #include <assert.h>
+// #include <stdio.h>
+// #include <sys/mman.h>
+// #include <string.h>
 
-#define GB4 ((uint64_t)1 << 32)     /* 4 GB = 2^32 */
-#define BOOK_SIZE 8
-#define BLOCK_SIZE 32
 
 /* The full memory state struct is private to this module. The user only
  * needs the first usable virtual address in order to handle address
  * translations as efficiently as possible (i.e. by passing local variables to
  * the convert address function instead of using global variables) */ 
-static Mem_T *mem = NULL;
+// static Mem_T *mem = NULL;
+// uint8_t *usable = NULL;
+// static Stack_T *rec = NULL;
+
+Mem_T *mem = NULL;
 uint8_t *usable = NULL;
+Stack_T *rec = NULL;
+uint32_t start_unused;
 
 uint8_t *init_memory_system(uint32_t kernel_size)
 {    
@@ -39,11 +42,14 @@ uint8_t *init_memory_system(uint32_t kernel_size)
     
     mem->mem = virt;
     mem->usable_mem = (void*)((uint8_t*)virt + BOOK_SIZE);
-    mem->recycler = recycler_init();
+    rec = recycler_init();
+    mem->recycler = rec;
+
 
     /* The kernel virtual size is 8 bytes smaller than its physical size */
     mem->kernel_virtual_size = kernel_size - BOOK_SIZE;
     mem->begin_unused = kernel_size;
+    start_unused = kernel_size;
 
     return usable;
 }
@@ -85,79 +91,6 @@ void kern_memcpy(uint32_t src_addr, uint32_t copy_size)
     return;
 }
 
-uint32_t vs_malloc(uint32_t size)
-{
-    /* Users may only ask vs_malloc for (2^24 - 8) bytes of contiguous space */
-    // printf("Size is %u\n", size);
-    assert(size < MAX_ALLOC);
-
-    /* Look for segments to be recycled. If there are freed segments that are
-     * ready to be recycled, recycled them */
-    uint32_t freed_seg = find_freed_segment(size);
-
-    /* check that a free segment is available */
-    if (freed_seg != SEG_NOT_FOUND) {
-        uint32_t *freed_seg_addr = convert_address(usable, freed_seg);
-        freed_seg_addr[-1] = size;
-
-        memset(freed_seg_addr, 0, size);
-        
-        return freed_seg;
-    }
-    
-    /* If no segments can be recycled, carve a fresh one from the heap */
-    
-    // beginning virtual
-    uint32_t user_start = mem->begin_unused + BOOK_SIZE;
-    // printf("The start of the unused memory is %u\n", begin_open);
-    
-    /* Adding 1 to the idx to get the number of blocks the alloc needs
-     * find number of 32 byte blocks need to support the allocation request */
-    uint32_t num_blocks = get_idx_from_alloc_size(size) + 1;
-    uint32_t user_cap = (num_blocks * BLOCK_SIZE) - BOOK_SIZE;
-    
-    /* Check that we still have enough 'carvable' memory in the 4GB segmment */
-    /* add 8 to user start to account for initial bookkeeping, needed for GB4 */
-    assert(GB4 - (user_start + BOOK_SIZE) >= user_cap);
-
-    // update the beginning of the unused heap
-    mem->begin_unused = user_start + user_cap;
-
-    uint32_t *user_addr = convert_address(usable, user_start);
-
-    user_addr[-2] = user_cap;
-    user_addr[-1] = size;
-
-    return user_start;
-}
-
-uint32_t vs_calloc(uint32_t size)
-{
-    /* Make a v^2 allocation */
-    uint32_t addr = vs_malloc(size);
-    
-    // /* Convert the v^2 address to a virtual address */
-    // void *ptr = convert_address(usable, addr);
-    // (void)ptr;
-
-    // /* NOTE: zeroing out the memory is only necessary when recycling a segment
-    //  * MAP_ANONYMOUS guarantees that all carved memory will be 0 */
-
-    // /* set the virtual memory to zero */
-    // memset(ptr, 0, size);
-
-    /* Return the virtual address */
-    return addr;
-}
-
-void vs_free(uint32_t addr)
-{
-    // printf("Freeing the memory segment with id %u\n", addr);
-
-    // Update the free list
-    free_segment(usable, addr);
-    return;
-}
 
 /* TODO: these two functions need thorough cleanup and testing. This can wait
  * because they are not useful for the performant VM, but would be useful in an

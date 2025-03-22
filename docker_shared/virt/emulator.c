@@ -17,7 +17,7 @@
 #include <string.h>
 
 #include "driver.h"
-#include "mem_state.h"
+// #include "mem_state.h"
 
 #define NUM_REGISTERS 8
 #define POWER ((uint64_t)1 << 32)  /* prevent 32-bit overflow with add & div */
@@ -31,9 +31,9 @@ void handle_instructions(uint8_t *mem);
 static inline bool exec_instr(Instruction word, 
                               uint32_t *regs, uint8_t *umem, 
                               uint32_t *pc);
-uint32_t map_segment(uint32_t size);
-void unmap_segment(uint32_t segmentm);
-void load_segment(uint32_t index, uint8_t *umem);
+inline uint32_t map_segment(uint32_t size);
+inline void unmap_segment(uint32_t segmentm);
+inline void load_segment(uint32_t index, uint8_t *umem);
 
 int main(int argc, char *argv[])
 {
@@ -259,17 +259,17 @@ static inline bool exec_instr(Instruction word, uint32_t *regs, uint8_t *umem,
     return false;
 }
 
-uint32_t map_segment(uint32_t size)
+inline uint32_t map_segment(uint32_t size)
 {
     return vs_calloc(size * sizeof(uint32_t));
 }
 
-void unmap_segment(uint32_t segment)
+inline void unmap_segment(uint32_t segment)
 {
     vs_free(segment);
 }
 
-void load_segment(uint32_t index, uint8_t *umem)
+inline void load_segment(uint32_t index, uint8_t *umem)
 {
     /* Return immediately if loading elsewhere in the zero segment */
     if (index == 0)
