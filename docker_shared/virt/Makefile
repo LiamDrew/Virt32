@@ -1,8 +1,8 @@
 CC = clang
 CFLAGS = -Wall -Wextra -Werror -Wpedantic -O2
 
-um: emulator.o driver.o recycler.o
-	$(CC) $(CFLAGS) -o um emulator.o driver.o recycler.o
+um: emulator.o driver.o
+	$(CC) $(CFLAGS) -o um emulator.o driver.o
 
 all: virt
 
@@ -15,8 +15,8 @@ main.o: main.c
 driver.o: driver.c
 	$(CC) $(CFLAGS) -c driver.c
 
-recycler.o: recycler.c
-	$(CC) $(CFLAGS) -c recycler.c
+# recycler.o: recycler.c
+# 	$(CC) $(CFLAGS) -c recycler.c
 
 clean:
 	rm -f *.o virt test_stack test_recycler test_mem

@@ -51,11 +51,13 @@ inline Stack_T stack_push(Stack_T s, uint32_t elem)
     return s;
 }
 
-inline uint32_t stack_pop(Stack_T *s)
+inline Stack_T stack_pop(Stack_T s)
 {
-    // assert(s->size > 0);
-    uint32_t top = s->stack[--s->size];
-    return top;
+    /* Omitted to improve performance:
+     * assert(s.size > 0); */
+
+    s.size--;
+    return s;
 }
 
 inline bool stack_is_empty(Stack_T s)
@@ -63,10 +65,9 @@ inline bool stack_is_empty(Stack_T s)
     return s.size == 0;
 }
 
-inline void stack_free(Stack_T *s)
+inline void stack_free(Stack_T s)
 {
-    free(s->stack);
-    free(s);
+    free(s.stack);
 }
 
 #endif 

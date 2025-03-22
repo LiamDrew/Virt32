@@ -15,21 +15,19 @@
 #define BOOK_SIZE 8
 #define BLOCK_SIZE 32
 
+#define INIT_STACK_SIZE 2
 #define SEG_NOT_FOUND 1
-
 
 #include <stdint.h>
 
-typedef struct Mem_T {
-    void *mem;              // pointer to the begining of a 4GB memory segment
-    void *usable_mem;       // pointer to the begining of the usable memory
-    void *recycler;         // data structure holding the free segment tags/sizes
+typedef struct {
+    void *mem;              /* Pointer to the full 4GB of memory */
+    void *usable_mem;       /* Pointer to the beginning of usable memory */
+    void *recycler;         /* Array of stacks for recycling segments */
     uint32_t kernel_virtual_size;
     uint32_t begin_unused;
 } Mem_T;
 
-/* Including the full definition in the header file so the compiler can inline 
- * his function across modules */
 inline void *convert_address(uint8_t *umem, uint32_t addr)
 {
     return umem + addr;
