@@ -4,8 +4,12 @@
 #define BOOK_SIZE 8
 #define MIN_SEG_SIZE 32
 
+/* The user can allocate at most 2^24 - 8 bytes. This means there are 2^19
+ * different segment lengths a user can allocate, and we are going to use a
+ * unique bucket to recycle each one. */
 #define MAX_ALLOC (((uint32_t)1 << 24) - BOOK_SIZE)
 #define KERN_SIZE MAX_ALLOC
+#define REC_BUCKETS ((uint32_t)1 << 19) /* 2^19 recyclable segment lengths */
 
 #define GB4 ((uint64_t)1 << 32) /* 4 GB = 2^32 */
 #define BOOK_SIZE 8
@@ -13,10 +17,6 @@
 
 #define SEG_NOT_FOUND 1
 
-/* The user can allocate at most 2^24 - 8 bytes. This means there are 2^19
- * different segment lengths a user can allocate, and we are going to use a
- * unique bucket to recycle each one. */
-#define REC_BUCKETS ((uint32_t)1 << 19) /* 2^19 recyclable segment lengths */
 
 #include <stdint.h>
 
@@ -24,10 +24,7 @@ typedef struct Mem_T {
     void *mem;              // pointer to the begining of a 4GB memory segment
     void *usable_mem;       // pointer to the begining of the usable memory
     void *recycler;         // data structure holding the free segment tags/sizes
-
-    // I am going to explicitly define the recycler as an array of Stack_Ts
-    // Stack_T *recycler;
-    uint32_t kernel_virtual_size;   // kernel_size 
+    uint32_t kernel_virtual_size;
     uint32_t begin_unused;
 } Mem_T;
 

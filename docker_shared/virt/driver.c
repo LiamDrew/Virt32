@@ -8,13 +8,6 @@
 #include "driver.h"
 #include <sys/mman.h>
 
-// #include "recycler.h"
-// #include <stdlib.h>
-// #include <assert.h>
-// #include <stdio.h>
-// #include <string.h>
-
-
 Mem_T *mem = NULL;
 uint8_t *usable = NULL;
 Stack_T *rec = NULL;
@@ -84,6 +77,57 @@ void kern_memcpy(uint32_t src_addr, uint32_t copy_size)
     return;
 }
 
+uint32_t vs_calloc(uint32_t size)
+{
+    /* Users may only ask vs_malloc for (2^24 - 8) bytes of contiguous space */
+    assert(size < MAX_ALLOC);
+
+    /* Look for segments to be recycled. If there are freed segments that are
+     * ready to be recycled, recycled them */
+    uint32_t freed_seg = find_freed_segment(size, rec);
+
+    /* check that a free segment is available */
+    if (freed_seg != SEG_NOT_FOUND)
+    {
+        uint32_t *freed_seg_addr = convert_address(usable, freed_seg);
+        freed_seg_addr[-1] = size;
+
+        /* memset is the expensive part of this operation. If we could fine a
+         * way to make it concurrent, that would be amazing*/
+
+        memset(freed_seg_addr, 0, size);
+
+        return freed_seg;
+    }
+
+    /* If no segments can be recycled, carve a fresh one from the heap */
+    uint32_t user_start = start_unused + BOOK_SIZE;
+
+    /* Find the number of 32 byte blocks need to fill the allocation */
+    uint32_t num_blocks = get_idx_from_alloc_size(size) + 1;
+    uint32_t user_cap = (num_blocks * BLOCK_SIZE) - BOOK_SIZE;
+
+    /* Check that we still have enough 'carvable' memory in the heap.
+     * Add BOOK_SIZE to user start to account for kernel bookkeeping */
+    assert(GB4 - (user_start + BOOK_SIZE) >= user_cap);
+
+    /* Update the beginning of the unused heap */
+    start_unused = user_start + user_cap;
+
+    uint32_t *user_addr = convert_address(usable, user_start);
+
+    user_addr[-2] = user_cap;
+    user_addr[-1] = size;
+
+    return user_start;
+}
+
+/* Virtual Segment Free (vs_free):
+ * Free a virtual segment for future use. */
+void vs_free(uint32_t addr)
+{
+    free_segment(usable, addr, rec);
+}
 
 /* TODO: these two functions need thorough cleanup and testing. This can wait
  * because they are not useful for the performant VM, but would be useful in an
