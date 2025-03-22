@@ -19,12 +19,14 @@ Stack_T *recycler_init(void)
 
     for (uint32_t i = 0; i < REC_BUCKETS; i++)
     {
-        Stack_T *s = stack_init(INIT_STACK_SIZE);
-        recycler[i] = *s;
+        Stack_T s = stack_init(INIT_STACK_SIZE);
+        recycler[i] = s;
     }
 
     return recycler;
 }
+
+// TODO: need a corresponding cleanup function for the recycler
 
 uint32_t find_freed_segment(uint32_t size)
 {
@@ -37,14 +39,15 @@ uint32_t find_freed_segment(uint32_t size)
     assert(index < REC_BUCKETS);
     
     // Stack_T* s = &((Stack_T*)mem->recycler)[index];
-    Stack_T *s = &rec[index];
+    Stack_T s = rec[index];
+    Stack_T *as = &rec[index];
 
     /* if no segment of size 'size', check next bucket */
     if (stack_is_empty(s)) {
         return SEG_NOT_FOUND;
     }
     
-    uint32_t freed_segment = stack_pop(s);
+    uint32_t freed_segment = stack_pop(as);
     return freed_segment;
 }
 
@@ -59,8 +62,9 @@ void free_segment(uint8_t *umem, uint32_t seg_addr)
 
     // printf("The capacity of the freed segment is %u\n", cap);
     int index = ((cap + 8) / 32) - 1;
+    (void)index;
 
     /* NOTE: intentionally storing the user-facing v^2 address in the stack
      * for easy future reuse */
-    stack_push(&rec[index], seg_addr);
+    rec[index] = stack_push(rec[index], seg_addr);
 }

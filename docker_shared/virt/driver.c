@@ -99,6 +99,9 @@ uint32_t vs_malloc(uint32_t size)
     if (freed_seg != SEG_NOT_FOUND) {
         uint32_t *freed_seg_addr = convert_address(usable, freed_seg);
         freed_seg_addr[-1] = size;
+
+        memset(freed_seg_addr, 0, size);
+        
         return freed_seg;
     }
     
@@ -133,15 +136,15 @@ uint32_t vs_calloc(uint32_t size)
     /* Make a v^2 allocation */
     uint32_t addr = vs_malloc(size);
     
-    /* Convert the v^2 address to a virtual address */
-    void *ptr = convert_address(usable, addr);
-    (void)ptr;
+    // /* Convert the v^2 address to a virtual address */
+    // void *ptr = convert_address(usable, addr);
+    // (void)ptr;
 
-    /* NOTE: zeroing out the memory is only necessary when recycling a segment
-     * MAP_ANONYMOUS guarantees that all carved memory will be 0 */
+    // /* NOTE: zeroing out the memory is only necessary when recycling a segment
+    //  * MAP_ANONYMOUS guarantees that all carved memory will be 0 */
 
-    /* set the virtual memory to zero */
-    memset(ptr, 0, size);
+    // /* set the virtual memory to zero */
+    // memset(ptr, 0, size);
 
     /* Return the virtual address */
     return addr;
