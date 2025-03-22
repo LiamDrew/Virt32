@@ -1,16 +1,11 @@
 #ifndef RECYCLER_H
 #define RECYCLER_H
 
-
 #include "mem_state.h"
 #include "stack.h"
 #include <stdlib.h>
 
 Stack_T *recycler_init(void);
-
-// uint32_t find_freed_segment(uint32_t size);
-
-// void free_segment(uint8_t *umem, uint32_t seg_addr);
 
 // TODO: need a corresponding cleanup function for the recycler
 

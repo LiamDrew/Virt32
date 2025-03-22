@@ -8,13 +8,8 @@
 #ifndef DRIVER_H
 #define DRIVER_H
 
-#include <stdint.h>
-#include "mem_state.h"
 #include "recycler.h"
-#include <stdlib.h>
 #include <assert.h>
-#include <stdio.h>
-#include <sys/mman.h>
 #include <string.h>
 
 extern uint8_t *usable;
@@ -22,39 +17,25 @@ extern Stack_T *rec;
 extern Mem_T *mem;
 extern uint32_t start_unused;
 
-// Moving this function to the mem_state module;
-// void *convert_address(Mem_T *mem, uint32_t addr);
-
-/* Initialize the virtual memory system */
-uint8_t *init_memory_system(uint32_t kernel_size); //checked, 2 mem_state vars on lookout
+uint8_t *init_memory_system(uint32_t kernel_size);
 
 void terminate_memory_system(void);
 
-/* Kernel Allocator (kern_remalloc):
- * Overwrite whatever is in the zero segment and initialize all requested
- * memory to zero. In a real OS, the kernel memory management needs to be
- * significantly more complicated, but since we are designing this memory system
- * for use in a very simple virtual machine. */
+/* Kernel (Re)allocate (kern_realloc):
+ * Overwrite the zero segment and initialize all memory to zero */
 uint32_t kern_realloc(uint32_t size);
 
 /* Kernel Memory Copy (kern_memcpy):
- * Provides users of the memory system with an interface to copy data in and
- * out of kernel space. */
+ * Copies data from "userspace" to "kernel space" */
 void kern_memcpy(uint32_t src_addr, uint32_t copy_size);
 
-/* Virtual Segment Malloc (vs_malloc): 
- * Carve out a segment of physical memory 
- * and serve it to the program as virtual memory. */
-// uint32_t vs_malloc(uint32_t size);
-
-/* Virtual segment calloc (vs_calloc): Same thing as vs_malloc, but zero all
- * the memory needed ahead of time */
-// uint32_t vs_calloc(uint32_t size);
-
+/* Virtual Segment Calloc (vs_calloc): 
+ * Carve out a segment of virtual memory and serve it to the program as
+ * zeroed-out v^2 memory */
 inline uint32_t vs_calloc(uint32_t size)
 {
     /* Users may only ask vs_malloc for (2^24 - 8) bytes of contiguous space */
-    assert(size < MAX_ALLOC);
+    // assert(size < MAX_ALLOC);
 
     /* Look for segments to be recycled. If there are freed segments that are
      * ready to be recycled, recycled them */
@@ -80,7 +61,7 @@ inline uint32_t vs_calloc(uint32_t size)
 
     /* Check that we still have enough 'carvable' memory in the heap.
      * Add BOOK_SIZE to user start to account for kernel bookkeeping */
-    assert(GB4 - (user_start + BOOK_SIZE) >= user_cap);
+    // assert(GB4 - (user_start + BOOK_SIZE) >= user_cap);
 
     /* Update the beginning of the unused heap */
     start_unused = user_start + user_cap;
@@ -100,12 +81,16 @@ inline void vs_free(uint32_t addr)
     free_segment(usable, addr, rec);
 }
 
+/* Set At (set_at):
+ * Store a uint32_t at a virtual address */
 inline void set_at(uint8_t *umem, uint32_t addr, uint32_t value)
 {
     uint32_t *dest = convert_address(umem, addr);
     *dest = value;
 }
 
+/* Get At (get_at):
+ * Get the uint32_t stored at a virtual address */
 inline uint32_t get_at(uint8_t *umem, uint32_t addr)
 {
     uint32_t *src = convert_address(umem, addr);

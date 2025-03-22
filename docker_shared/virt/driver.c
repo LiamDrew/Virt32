@@ -6,21 +6,14 @@
  */
 
 #include "driver.h"
+#include <sys/mman.h>
+
 // #include "recycler.h"
 // #include <stdlib.h>
 // #include <assert.h>
 // #include <stdio.h>
-// #include <sys/mman.h>
 // #include <string.h>
 
-
-/* The full memory state struct is private to this module. The user only
- * needs the first usable virtual address in order to handle address
- * translations as efficiently as possible (i.e. by passing local variables to
- * the convert address function instead of using global variables) */ 
-// static Mem_T *mem = NULL;
-// uint8_t *usable = NULL;
-// static Stack_T *rec = NULL;
 
 Mem_T *mem = NULL;
 uint8_t *usable = NULL;
