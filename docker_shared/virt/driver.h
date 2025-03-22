@@ -25,6 +25,7 @@ void terminate_memory_system(void);
  * Overwrite the zero segment and initialize all memory to zero */
 uint32_t kern_realloc(uint32_t size);
 
+
 /* Kernel Memory Copy (kern_memcpy):
  * Copies data from "userspace" to "kernel space" */
 void kern_memcpy(uint32_t src_addr, uint32_t copy_size);
@@ -32,9 +33,7 @@ void kern_memcpy(uint32_t src_addr, uint32_t copy_size);
 /* Virtual Segment Calloc (vs_calloc): 
  * Carve out a segment of virtual memory and serve it to the program as
  * zeroed-out v^2 memory */
-// uint32_t vs_calloc(uint32_t size);
-
-inline uint32_t vs_calloc(uint32_t size)
+inline uint32_t vs_calloc(uint8_t *umem, uint32_t size)
 {
     /* Users may only ask vs_malloc for (2^24 - 8) bytes of contiguous space
      * Omitted for performance reasons. The user must use our module correctly:
@@ -47,7 +46,8 @@ inline uint32_t vs_calloc(uint32_t size)
     /* check that a free segment is available */
     if (freed_seg != SEG_NOT_FOUND)
     {
-        uint32_t *freed_seg_addr = convert_address(usable, freed_seg);
+        uint32_t *freed_seg_addr = convert_address(umem, freed_seg);
+
         freed_seg_addr[-1] = size;
 
         memset(freed_seg_addr, 0, size);
@@ -70,7 +70,7 @@ inline uint32_t vs_calloc(uint32_t size)
     /* Update the beginning of the unused heap */
     start_unused = user_start + user_cap;
 
-    uint32_t *user_addr = convert_address(usable, user_start);
+    uint32_t *user_addr = convert_address(umem, user_start);
 
     user_addr[-2] = user_cap;
     user_addr[-1] = size;
@@ -100,9 +100,5 @@ inline uint32_t get_at(uint8_t *umem, uint32_t addr)
     uint32_t *src = convert_address(umem, addr);
     return *src;
 }
-
-// void safe_set_at(Mem_T *mem, uint32_t base, uint32_t offset, uint32_t value);
-
-// uint32_t safe_get_at(Mem_T *mem, uint32_t base, uint32_t offset);
 
 #endif

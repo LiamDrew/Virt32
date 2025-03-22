@@ -30,8 +30,9 @@ void handle_instructions(uint8_t *mem);
 static inline bool exec_instr(Instruction word, 
                               uint32_t *regs, uint8_t *umem, 
                               uint32_t *pc);
-inline uint32_t map_segment(uint32_t size);
-inline void unmap_segment(uint32_t segmentm);
+inline uint32_t map_segment(uint8_t *umem, uint32_t size);
+
+inline void unmap_segment(uint32_t segment);
 inline void load_segment(uint32_t index, uint8_t *umem);
 
 int main(int argc, char *argv[])
@@ -132,15 +133,6 @@ void handle_instructions(uint8_t *umem)
     }
 }
 
-void print_registers(uint32_t *regs)
-{
-    printf("\n______\n");
-    for (int i = 0; i < 8; i++) {
-        printf("Register %d is %u\n", i, regs[i]);
-    }
-    printf("______\n");
-}
-
 static inline bool exec_instr(Instruction word, uint32_t *regs, uint8_t *umem, 
                               uint32_t *pc)
 {
@@ -164,33 +156,25 @@ static inline bool exec_instr(Instruction word, uint32_t *regs, uint8_t *umem,
     if (__builtin_expect(opcode == 1, 1))
     {
         regs[a] = get_at(umem, regs[b] + regs[c] * sizeof(uint32_t));
-        // regs[a] = get_at(mem, regs[b], regs[c] * sizeof(uint32_t));
-        // fprintf(stderr, "Segmented Load\n");
     }
 
     /* Segmented Store */
     else if (__builtin_expect(opcode == 2, 1))
     {
         set_at(umem, regs[a] + regs[b] * sizeof(uint32_t), regs[c]);
-        // set_at(mem, regs[a], regs[b] * sizeof(uint32_t), regs[c]);
-        // fprintf(stderr, "Segmented Store\n");
     }
 
     /* Bitwise NAND */
     else if (__builtin_expect(opcode == 6, 1))
     {
         regs[a] = ~(regs[b] & regs[c]);
-        // fprintf(stderr, "Bitwise NAND\n");
     }
 
     /* Load Segment */
     else if (__builtin_expect(opcode == 12, 0))
     {
-        // printf("Loading segment, regs[c] is: %u\n", regs[c]);
-        // load_segment(regs[b], regs, c);
         load_segment(regs[b], umem);
         *pc = regs[c];      // intentionally not multiplying
-        // fprintf(stderr, "Load Segment\n");
     }
 
     /* Addition */
@@ -204,63 +188,56 @@ static inline bool exec_instr(Instruction word, uint32_t *regs, uint8_t *umem,
     {
         if (regs[c] != 0)
             regs[a] = regs[b];
-        // fprintf(stderr, "Conditional Move\n");
     }
 
     /* Map Segment */
     else if (__builtin_expect(opcode == 8, 0))
     {
-        regs[b] = map_segment(regs[c]);
-        // fprintf(stderr, "Map Segment\n");
+        regs[b] = map_segment(umem, regs[c]);
     }
 
     /* Unmap Segment */
     else if (__builtin_expect(opcode == 9, 0))
     {
         unmap_segment(regs[c]);
-        // fprintf(stderr, "Unmap Segment\n");
     }
 
     /* Division */
     else if (__builtin_expect(opcode == 5, 0))
     {
         regs[a] = regs[b] / regs[c];
-        // fprintf(stderr, "Division\n");
     }
 
     /* Multiplication */
     else if (__builtin_expect(opcode == 4, 0))
     {
         regs[a] = (regs[b] * regs[c]) % POWER;
-        // fprintf(stderr, "Multiplication\n");
     }
 
     /* Output */
     else if (__builtin_expect(opcode == 10, 0))
     {
         putchar((unsigned char)regs[c]);
-        // fprintf(stderr, "Output\n");
     }
 
     /* Input */
     else if (__builtin_expect(opcode == 11, 0))
     {
         regs[c] = getc(stdin);
-        // fprintf(stderr, "Input\n");
     }
+
     /* Stop or Invalid Instruction */
     else
     {
-        // fprintf(stderr, "Stopcode: %d\n", opcode);
         return true;
     }
 
     return false;
 }
 
-inline uint32_t map_segment(uint32_t size)
+inline uint32_t map_segment(uint8_t *umem, uint32_t size)
 {
-    return vs_calloc(size * sizeof(uint32_t));
+    return vs_calloc(umem, size * sizeof(uint32_t));
 }
 
 inline void unmap_segment(uint32_t segment)
