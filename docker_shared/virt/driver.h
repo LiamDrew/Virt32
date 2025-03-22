@@ -40,6 +40,10 @@ uint32_t vs_malloc(uint32_t size);
  * the memory needed ahead of time */
 uint32_t vs_calloc(uint32_t size);
 
+/* Virtual Segment Free (vs_free):
+ * Free a virtual segment for future use. */
+void vs_free(uint32_t addr);
+
 inline void set_at(uint8_t *umem, uint32_t addr, uint32_t value)
 {
     uint32_t *dest = convert_address(umem, addr);
@@ -55,9 +59,5 @@ inline uint32_t get_at(uint8_t *umem, uint32_t addr)
 // void safe_set_at(Mem_T *mem, uint32_t base, uint32_t offset, uint32_t value);
 
 // uint32_t safe_get_at(Mem_T *mem, uint32_t base, uint32_t offset);
-
-/* Virtual Segment Free (vs_free): 
- * Free a virtual segment for future use. */
-void vs_free(uint32_t addr);
 
 #endif

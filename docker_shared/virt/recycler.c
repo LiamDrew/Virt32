@@ -3,68 +3,64 @@
 #include <stdio.h>
 #include <assert.h>
 
-/* NOTE: this is not quite right. This needs to be thought through again */
-#define SIZE 32769 /* User can allocate at most 1GB */
+#define INIT_STACK_SIZE 2
 
+static Stack_T *rec = NULL;
+
+/* TODO: transition this to keeping the recycler private to this module. There
+ * should be no need to return the pointer to the Stacks */
 Stack_T *recycler_init(void)
 {
-    Stack_T *recycler = malloc(sizeof(Stack_T) * SIZE);
-    for (int i = 0; i < SIZE; i++)
+    assert(rec == NULL);
+    rec = malloc(sizeof(Stack_T) * REC_BUCKETS);
+    assert(rec != NULL);
+
+    Stack_T *recycler = rec;
+
+    for (uint32_t i = 0; i < REC_BUCKETS; i++)
     {
-        Stack_T *s = stack_init(10);
+        Stack_T *s = stack_init(INIT_STACK_SIZE);
         recycler[i] = *s;
     }
 
     return recycler;
 }
 
-uint32_t find_freed_segment(Mem_T *mem, uint32_t size)
+uint32_t find_freed_segment(uint32_t size)
 {
     uint32_t index = get_idx_from_alloc_size(size);
     
-    printf("Index is %u, size is %u\n", index, size);
+    /* Debugging for now */
+    // printf("\n\n Finding freed segment: Index is %u, size is %u\n\n", index, size);
+    // assert(false);
 
-    assert(false);
-    assert(index < SIZE);
+    assert(index < REC_BUCKETS);
     
-    Stack_T* s = &((Stack_T*)mem->recycler)[index];
+    // Stack_T* s = &((Stack_T*)mem->recycler)[index];
+    Stack_T *s = &rec[index];
 
     /* if no segment of size 'size', check next bucket */
     if (stack_is_empty(s)) {
-        return 0;
+        return SEG_NOT_FOUND;
     }
     
     uint32_t freed_segment = stack_pop(s);
     return freed_segment;
 }
 
-/* Assuming that the seg_addr received is already processed */
-void free_segment(Mem_T *mem, uint32_t seg_addr)
+/* NOTE: Ideally, this function would be concurrent so the UM can keep executing
+ * instructions without waiting around for the recycler to update its stacks */
+void free_segment(uint8_t *umem, uint32_t seg_addr)
 {
-    uint32_t bk_addr = seg_addr - BOOK_SIZE;
+    uint32_t sys_addr = seg_addr - BOOK_SIZE;
 
-    /* Grab segment size from bookkeeping */
-    // uint32_t begin_open = mem->begin_unused;
-    uint32_t *phys = (uint32_t*)mem->usable_mem;
-    
-    //printf("This is bk_addr %d\n", bk_addr);
+    uint32_t *virt = convert_address(umem, sys_addr);
+    uint32_t cap = *virt;
 
-    int seg_cap = phys[65536 + bk_addr];
-    
-    //printf("This is seg_cap %d\n", seg_cap);
+    // printf("The capacity of the freed segment is %u\n", cap);
+    int index = ((cap + 8) / 32) - 1;
 
-    int index = ((seg_cap + 8) / 32) - 1;
-    //printf("index: %d\n", index);
-    stack_push(&((Stack_T*)(mem->recycler))[index], seg_addr);
-    if (!stack_is_empty(&((Stack_T*)(mem->recycler))[3])) {
-        //printf("inserted segment for 128\n");
-    }
-
-    // I believe these are the new changes, not sure if they will work.
-
-    // uint32_t* phys = convert_address(mem, seg_addr);
-    // int seg_cap = phys[-2];
-    // int index = ((seg_cap + 8) / 32) - 1;
-
-    // stack_push(&((Stack*)(mem->recycler))[index], seg_addr);
+    /* NOTE: intentionally storing the user-facing v^2 address in the stack
+     * for easy future reuse */
+    stack_push(&rec[index], seg_addr);
 }

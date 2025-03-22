@@ -20,8 +20,7 @@
 #include "mem_state.h"
 
 #define NUM_REGISTERS 8
-#define POWER ((uint64_t)1 << 32) // for preventing overflow with add and div
-#define KERN_SIZE ((uint32_t)1 << 19) // this is 2^19
+#define POWER ((uint64_t)1 << 32)  /* prevent 32-bit overflow with add & div */
 typedef uint32_t Instruction;
 
 void initialize_memory(FILE *fp, size_t fsize, uint8_t *umem);
@@ -267,12 +266,7 @@ uint32_t map_segment(uint32_t size)
 
 void unmap_segment(uint32_t segment)
 {
-    (void)segment;
-    
-    /* NOTE: The recycler currently segfaults and is completely unusable
-     * I suspect this has to do more with it's usage/integration than with it's
-     * implementation in the first place. */
-    // vs_free(mem, segment);
+    vs_free(segment);
 }
 
 void load_segment(uint32_t index, uint8_t *umem)

@@ -1,6 +1,7 @@
 #include "stack.h"
 #include <stdio.h>
 #include <stdint.h>
+#include <assert.h>
 
 void general_use(void);
 void pop_from_empty(void);
@@ -47,6 +48,8 @@ void general_use(void)
     printf("top: %d\n", stack_pop(s));
     printf("top: %d\n", stack_pop(s));
 
+    assert(stack_is_empty(s));
+
     stack_free(s);
 }
 
@@ -77,6 +80,8 @@ void repeated_operations(void)
     printf("top: %d\n", stack_pop(s));
     printf("top: %d\n", stack_pop(s));
 
+    assert(stack_is_empty(s));
+
     stack_free(s);
 }
 
@@ -89,9 +94,13 @@ void insert_many_elems(void)
         stack_push(s, i);
     }
 
+    assert(!stack_is_empty(s));
+
     for (uint32_t i = 0; i < 1000; i++) {
         stack_pop(s);
     }
+
+    assert(stack_is_empty(s));
 
     stack_free(s);
 }

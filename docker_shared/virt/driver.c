@@ -13,7 +13,7 @@
 #include <sys/mman.h>
 #include <string.h>
 
-#define GB4 ((uint64_t)1 << 32)     // GB4 = 2^32
+#define GB4 ((uint64_t)1 << 32)     /* 4 GB = 2^32 */
 #define BOOK_SIZE 8
 #define BLOCK_SIZE 32
 
@@ -87,22 +87,20 @@ void kern_memcpy(uint32_t src_addr, uint32_t copy_size)
 
 uint32_t vs_malloc(uint32_t size)
 {
-    /* users may only ask vs_malloc for 1MB of contiguous space, maximum */
-    //assert(((size >> 32) - 8) < (2 << 30))
+    /* Users may only ask vs_malloc for (2^24 - 8) bytes of contiguous space */
+    // printf("Size is %u\n", size);
+    assert(size < MAX_ALLOC);
 
-    // TODO: actually get the recycler to work. Until then, leave this commented
     /* Look for segments to be recycled. If there are freed segments that are
      * ready to be recycled, recycled them */
-    
-    // uint32_t freed_seg = find_freed_segment(mem, size);
+    uint32_t freed_seg = find_freed_segment(size);
 
-    //  /* check that a free segment is available */
-    // if (freed_seg) {
-    //     // update capacity, size, and usable beginner address for client
-    //     uint32_t *freed_seg_addr = convert_address(mem, freed_seg);
-    //     freed_seg_addr[-1] = size;
-    //     return freed_seg;
-    // }
+    /* check that a free segment is available */
+    if (freed_seg != SEG_NOT_FOUND) {
+        uint32_t *freed_seg_addr = convert_address(usable, freed_seg);
+        freed_seg_addr[-1] = size;
+        return freed_seg;
+    }
     
     /* If no segments can be recycled, carve a fresh one from the heap */
     
@@ -136,14 +134,14 @@ uint32_t vs_calloc(uint32_t size)
     uint32_t addr = vs_malloc(size);
     
     /* Convert the v^2 address to a virtual address */
-    // void *ptr = convert_address2(addr);
-    // (void)ptr;
+    void *ptr = convert_address(usable, addr);
+    (void)ptr;
 
     /* NOTE: zeroing out the memory is only necessary when recycling a segment
      * MAP_ANONYMOUS guarantees that all carved memory will be 0 */
 
-    // memset the physical memory
-    // memset(ptr, 0, size);
+    /* set the virtual memory to zero */
+    memset(ptr, 0, size);
 
     /* Return the virtual address */
     return addr;
@@ -154,10 +152,9 @@ void vs_free(uint32_t addr)
     // printf("Freeing the memory segment with id %u\n", addr);
 
     // Update the free list
-    free_segment(mem, addr);
+    free_segment(usable, addr);
     return;
 }
-
 
 /* TODO: these two functions need thorough cleanup and testing. This can wait
  * because they are not useful for the performant VM, but would be useful in an
