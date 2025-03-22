@@ -45,13 +45,10 @@ extern Stack_T *rec;
 extern Mem_T *mem;
 extern uint32_t start_unused;
 
-
-
 /* Memory utility functions */
-inline void *convert_address(uint8_t *umem, uint32_t addr)
-{
-    return umem + addr;
-}
+
+/* Using a macro is disgusting but the linker gave me no choice */
+#define convert_address(umem, addr) ((void *)((uint8_t *)umem + addr))
 
 inline uint32_t get_idx_from_alloc_size(uint32_t size)
 {
@@ -60,21 +57,7 @@ inline uint32_t get_idx_from_alloc_size(uint32_t size)
     return num_blocks;
 }
 
-
-
-/* Stack functions */
-inline Stack_T stack_init(uint32_t size)
-{
-    assert(size > 0);
-
-    Stack_T s;
-    s.stack = malloc(size * sizeof(uint32_t));
-    s.capacity = size;
-    s.size = 0;
-
-    return s;
-}
-
+/* Stack interface */
 inline uint32_t stack_top(Stack_T s)
 {
     assert(s.size > 0);
@@ -115,13 +98,6 @@ inline bool stack_is_empty(Stack_T s)
     return s.size == 0;
 }
 
-inline void stack_free(Stack_T s)
-{
-    free(s.stack);
-}
-
-
-
 /* Recycler functions*/
 Stack_T *recycler_init(void);
 
@@ -158,8 +134,6 @@ inline void free_segment(uint8_t *umem, uint32_t seg_addr, Stack_T *rec)
      * for easy reuse in the future */
     rec[index] = stack_push(rec[index], seg_addr);
 }
-
-
 
 /* Memory system interface */
 

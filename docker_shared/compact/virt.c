@@ -72,6 +72,23 @@ void kern_memcpy(uint32_t src_addr, uint32_t copy_size)
     return;
 }
 
+inline Stack_T stack_init(uint32_t size)
+{
+    assert(size > 0);
+
+    Stack_T s;
+    s.stack = malloc(size * sizeof(uint32_t));
+    s.capacity = size;
+    s.size = 0;
+
+    return s;
+}
+
+inline void stack_free(Stack_T s)
+{
+    free(s.stack);
+}
+
 Stack_T *recycler_init(void)
 {
     Stack_T *recycler = malloc(sizeof(Stack_T) * REC_BUCKETS);
