@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
     uint32_t kern_size = 524288; // this is 2^19
     Mem_T *mem = init_memory_system(kern_size);
 
-    initialize_memory(fp, fsize + sizeof(Instruction), mem);
+    initialize_memory(fp, fsize, mem);
     
     handle_instructions(NULL, mem);
 
@@ -75,7 +75,7 @@ void initialize_memory(FILE *fp, size_t fsize, Mem_T *mem)
     /* NOTE: Here, fsize is already adjusted to account for the fact that each
      * UM instruction is 4 bytes. Future allocations will have to take this into
      * account. */
-    printf("We expect fsize to be 48: %zu\n", fsize);
+    printf("fsize: %zu\n", fsize);
     kern_recalloc(mem, fsize);
     uint32_t word = 0;
     int c;
@@ -225,6 +225,7 @@ static inline bool exec_instr(Instruction word, Instruction **pp,
     else if (__builtin_expect(opcode == 8, 0))
     {
         regs[b] = map_segment(regs[c], mem);
+        print_registers(regs);
         // fprintf(stderr, "Map Segment\n");
     }
 

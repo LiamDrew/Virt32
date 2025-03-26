@@ -28,7 +28,7 @@
  * containing the struct actually makes this suuuuuper public. */
 static Mem_T *mem_state = NULL;
 
-/* Convert address is private to this module */
+/* Convert address WAS private to this module, lets try to get back to that */
 // void *convert_address(Mem_T *mem, uint32_t addr);
 
 Mem_T* init_memory_system(uint32_t kernel_size)

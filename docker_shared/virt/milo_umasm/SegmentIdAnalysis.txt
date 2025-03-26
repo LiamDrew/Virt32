@@ -1,0 +1,128 @@
+This file contains the register outputs corresponding to the test file 
+segmentIDTest.um
+
+The test works by loading a power of 2 into r1 in the range [2^0, 2^16]. Next,
+a segment of that size is requested from the um, with the ID being stored in
+in r2. Only the progression of r1, r2 is stored in this document as all other
+registers are zeroed in this test (and have been manually confirmed to exhibit
+that expected behavior).
+
+
+______
+Register 1 is 1 (4 bytes)
+Register 2 is 524296
+Num Bytes til next returned ID: 32
+______
+
+______
+Register 1 is 2 (8 bytes)
+Register 2 is 524328
+Num Bytes til next returned ID: 32
+
+______
+
+______
+
+Register 1 is 4 (16 bytes)
+Register 2 is 524360
+Num Bytes til next returned ID: 32
+Expected (y/n)? y
+______
+
+______
+Register 1 is 8 (32 bytes)
+Register 2 is 524392
+Num Bytes til next returned ID: 64
+Expected (y/n)? y
+______
+
+______
+Register 1 is 16 (64 bytes)
+Register 2 is 524456
+Num Bytes til next returned ID: 96
+Expected (y/n)? y
+______
+
+______
+Register 1 is 32 (128 bytes)
+Register 2 is 524552
+Num Bytes til next returned ID: 160
+Expected (y/n)? y
+______
+
+______
+Register 1 is 64 (256 bytes)
+Register 2 is 524712
+Num Bytes til next returned ID: 
+Expected (y/n)? (y)
+______
+
+______
+Register 1 is 128 (512 bytes)
+Register 2 is 525000
+Num Bytes til next returned ID:
+Expected (y/n)? 
+______
+
+______
+Register 1 is 256
+Register 2 is 525544
+Num Bytes til next returned ID:
+Expected (y/n)? 
+______
+
+______
+Register 1 is 512
+Register 2 is 526600
+Num Bytes til next returned ID:
+Expected (y/n)? 
+______
+
+______
+Register 1 is 1024
+Register 2 is 528680
+Num Bytes til next returned ID:
+Expected (y/n)? 
+______
+
+______
+Register 1 is 2048
+Register 2 is 532808
+Num Bytes til next returned ID:
+Expected (y/n)? 
+______
+
+______
+Register 1 is 4096
+Register 2 is 541032
+Num Bytes til next returned ID:
+Expected (y/n)? 
+______
+
+______
+Register 1 is 8192
+Register 2 is 557448
+Num Bytes til next returned ID:
+Expected (y/n)? 
+______
+
+______
+Register 1 is 16384
+Register 2 is 590248
+Num Bytes til next returned ID:
+Expected (y/n)? 
+______
+
+______
+Register 1 is 32768
+Register 2 is 655816
+Num Bytes til next returned ID:
+Expected (y/n)? 
+______
+
+______
+Register 1 is 65536
+Register 2 is 786920
+Num Bytes til next returned ID:
+Expected (y/n)? 
+______

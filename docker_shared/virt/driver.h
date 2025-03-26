@@ -11,11 +11,9 @@
 #include <stdint.h>
 #include "mem_state.h"
 
-// Moving this function to the mem_state module;
-// void *convert_address(Mem_T *mem, uint32_t addr);
-
 /* Initialize the virtual memory system */
 Mem_T *init_memory_system(uint32_t kernel_size); //checked, 2 mem_state vars on lookout
+
 
 void terminate_memory_system(Mem_T *mem);
 
