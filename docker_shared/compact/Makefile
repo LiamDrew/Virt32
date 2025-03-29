@@ -4,8 +4,6 @@ CFLAGS = -g -Wall -Wextra -Werror -Wpedantic -O2
 um: emulator.o virt.o
 	$(CC) $(CFLAGS) -o um emulator.o virt.o
 
-all: virt
-
 emulator.o: emulator.c
 	$(CC) $(CFLAGS) -c emulator.c
 
