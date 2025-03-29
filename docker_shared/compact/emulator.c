@@ -16,10 +16,10 @@
 #include <sys/stat.h>
 #include <string.h>
 
-#include "driver.h"
+#include "virt.h"
 
 #define NUM_REGISTERS 8
-#define POWER ((uint64_t)1 << 32)  /* prevent 32-bit overflow with add & div */
+#define POWER ((uint64_t)1 << 32) /* prevent 32-bit overflow with add & div */
 typedef uint32_t Instruction;
 
 void initialize_memory(FILE *fp, size_t fsize, uint8_t *umem);
@@ -27,8 +27,8 @@ uint64_t assemble_word(uint64_t word, unsigned width, unsigned lsb,
                        uint64_t value);
 
 void handle_instructions(uint8_t *mem);
-static inline bool exec_instr(Instruction word, 
-                              uint32_t *regs, uint8_t *umem, 
+static inline bool exec_instr(Instruction word,
+                              uint32_t *regs, uint8_t *umem,
                               uint32_t *pc);
 inline uint32_t map_segment(uint8_t *umem, uint32_t size);
 
@@ -59,11 +59,11 @@ int main(int argc, char *argv[])
     uint8_t *umem = init_memory_system(KERN_SIZE);
 
     initialize_memory(fp, fsize + sizeof(Instruction), umem);
-    
+
     handle_instructions(umem);
 
     terminate_memory_system();
-    
+
     return EXIT_SUCCESS;
 }
 
@@ -133,7 +133,7 @@ void handle_instructions(uint8_t *umem)
     }
 }
 
-static inline bool exec_instr(Instruction word, uint32_t *regs, uint8_t *umem, 
+static inline bool exec_instr(Instruction word, uint32_t *regs, uint8_t *umem,
                               uint32_t *pc)
 {
     uint32_t a = 0, b = 0, c = 0, val = 0;
@@ -174,7 +174,7 @@ static inline bool exec_instr(Instruction word, uint32_t *regs, uint8_t *umem,
     else if (__builtin_expect(opcode == 12, 0))
     {
         load_segment(regs[b], umem);
-        *pc = regs[c];      // intentionally not multiplying
+        *pc = regs[c]; // intentionally not multiplying
     }
 
     /* Addition */

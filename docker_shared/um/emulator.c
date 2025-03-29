@@ -337,12 +337,14 @@ void unmap_segment(uint32_t segment)
 void load_segment(uint32_t index, uint32_t *zero, uint32_t *regs, uint32_t c)
 {
     (void)zero;
+    (void)c;
+    (void)regs;
     
     if (index > 0)
     {
         uint32_t copied_seq_size = segment_lengths[index];
 
-        printf("New segment size needs to be %lu\n", copied_seq_size * sizeof(uint32_t));
+        // printf("New segmentm size needs to be %lu\n", copied_seq_size * sizeof(uint32_t));
 
         uint32_t *new_zero = malloc(copied_seq_size * sizeof(uint32_t));
         memcpy(new_zero, segment_sequence[index],
@@ -350,9 +352,9 @@ void load_segment(uint32_t index, uint32_t *zero, uint32_t *regs, uint32_t c)
         segment_sequence[0] = new_zero;
 
         // Added for debugging
-        print_registers(regs);
+        // print_registers(regs);
 
-        printf("The index here is %u\n", regs[c]);
+        // printf("The index here is %u\n", regs[c]);
 
         // assert(false);
     }
