@@ -8,7 +8,7 @@ Presented at JumboHack 2025 under the Mad Hacker track.
 
 ## Overview
 
-This project does two things:
+The Virt32 module provides two main features:
 1. Allocate memory in a 32-bit address space. We implement our own versions of malloc, calloc, and free, providing user programs with an interface to manage memory within a virtualized 32-bit address space on a 64-bit machine.
 
 2. Translate these 32 bit address to 64 bit address so the program user can access host machine memory from the abstraction of their 32-bit virtual address.
@@ -24,6 +24,7 @@ The key performance improvement is that all 32 to 64-bit address translations ca
 Not only does addition save cycles compared to memory access, but not having the address table taking up space in the cache saves cache space for the frequently accessed memory addressses themselves. This outcome is the best of both words for the Universal Machine: 32-bit addressable memory being fully supported by the hardware resources of a 64-bit machine.
 
 ### What is the Universal Machine?
+
 The Universal Machine (or UM) is a simple 32 bit virtual machine with a RISC-style instruction set. The UM has 8 general-purpose 32 bit registers, an instruction pointer, and maps memory segments that are each identified by a 32 bit integer. Much like real RISC machine code instructions, each UM machine code instruction is packed in 4 byte "words", with certain bits to identify the opcode, source and destination registers, and values to load into registers.
 
 The UM instruction set consists of the following 14 instructions:  
@@ -44,11 +45,11 @@ Load Program (see below)
 
 One special memory segment mapped by the segment identifier 0 contains the UM machine code instructions that are currently being executed. The load program instruction can jump to a different point in this segment and continue executing, or can duplicate another memory segment and load it into the zero segment to be executed.
 
-To learn more about the Universal Machine, please read the overview of [this project](https://github.com/LiamDrew/UM-JIT), which goes into significantly more detail.
+To learn more about the Universal Machine, please read the overview of [this project](https://github.com/LiamDrew/UM-JIT), which explains the Universal Machine specification and operation in more detail. (The above description has been borrowed from said project).
 
 ### Why does our Memory Allocator make the Universal Machine faster?
 
-Every time the UM performs a Load Register or Store Register instruction, it needs to convert the 32-bit address it wants to store a 4 byte integer at into a 64-bit memory address where the integer will actually be stored. As described above, 
+Every time the UM performs a Load Register or Store Register instruction, it needs to convert the 32-bit address it wants to store a 4 byte integer at into a 64-bit memory address where the integer will actually be stored. As described above, this requires a 32-bit to 64-bit address translation followed by a memory access at the 64-bit address. Doing the address translation with addition instead of a table lookup saves the host machine a few cycles when emulating these instructions.
 
 Saving a few cycles per instruction might not sound like much, but the Load/Store register instructions are incredibly common in many Universal Machine assembly language programs. Over hundreds of thousands of these instructions, the performance improvements adds up to a significant improvement; see the performance section below.
 
