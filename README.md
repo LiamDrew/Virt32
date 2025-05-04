@@ -30,7 +30,7 @@ r4 := map_segment(r1 words)
 ```
 
 The standard UM memory model will handle this in the following manner:
-![UM Memory Model with Segment Table](images/Table.png)
+![UM Memory Model with Segment Table](media/Table.png)
 (In this example, the zero segment is an arbitrary size.)  
 With the standard memory model, the results of these map_segment calls will be the following:
 ```
@@ -40,7 +40,7 @@ r4 = 3
 ```
 
 For the same workload, consider the memory model implemented by our allocator:
-![UM Memory Model with Allocator](images/Allocator.png)
+![UM Memory Model with Allocator](media/Allocator.png)
 With the modified memory model, the results of these map segment calls, expressed as 32-bit unsigned integers in hex, are:
 ```
 r2 = 0x00010010
