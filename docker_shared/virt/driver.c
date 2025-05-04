@@ -7,6 +7,7 @@
 
 #include "driver.h"
 #include <sys/mman.h>
+#include <stdio.h>
 
 Mem_T *mem = NULL;
 uint8_t *usable = NULL;
@@ -23,8 +24,11 @@ uint8_t *init_memory_system(uint32_t kernel_size)
     /* Allocate 4 GB of contiguous virtual memory */
     void *virt = mmap(NULL, GB4, PROT_READ | PROT_WRITE, 
                       MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    
+    // printf("Starting addr is %p\n", virt);
 
     usable = ((uint8_t*)virt + BOOK_SIZE);
+
     
     mem->mem = virt;
     mem->usable_mem = (void*)((uint8_t*)virt + BOOK_SIZE);

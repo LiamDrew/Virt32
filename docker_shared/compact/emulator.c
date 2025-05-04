@@ -15,6 +15,7 @@
 #include <assert.h>
 #include <sys/stat.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "virt.h"
 
@@ -30,10 +31,10 @@ void handle_instructions(uint8_t *mem);
 static inline bool exec_instr(Instruction word,
                               uint32_t *regs, uint8_t *umem,
                               uint32_t *pc);
-inline uint32_t map_segment(uint8_t *umem, uint32_t size);
+static inline uint32_t map_segment(uint8_t *umem, uint32_t size);
 
-inline void unmap_segment(uint32_t segment);
-inline void load_segment(uint32_t index, uint8_t *umem);
+static inline void unmap_segment(uint32_t segment);
+static inline void load_segment(uint32_t index, uint8_t *umem);
 
 int main(int argc, char *argv[])
 {
@@ -235,17 +236,17 @@ static inline bool exec_instr(Instruction word, uint32_t *regs, uint8_t *umem,
     return false;
 }
 
-inline uint32_t map_segment(uint8_t *umem, uint32_t size)
+static inline uint32_t map_segment(uint8_t *umem, uint32_t size)
 {
     return vs_calloc(umem, size * sizeof(uint32_t));
 }
 
-inline void unmap_segment(uint32_t segment)
+static inline void unmap_segment(uint32_t segment)
 {
     vs_free(segment);
 }
 
-inline void load_segment(uint32_t index, uint8_t *umem)
+static inline void load_segment(uint32_t index, uint8_t *umem)
 {
     /* Return immediately if loading elsewhere in the zero segment */
     if (index == 0)
