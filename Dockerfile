@@ -31,4 +31,4 @@ CMD ["/bin/bash"]
 # docker buildx build --platform=linux/arm64 -t dev-tools-aarch64 .
 
 # NOTE: Command to run a container using this image
-# docker run --platform=linux/arm64 -it -v "$PWD/docker_shared:/home/developer/shared" dev-tools-aarch64
+# docker run --platform=linux/arm64 -it -v "$PWD:/home/developer/" dev-tools-aarch64

@@ -1,4 +1,5 @@
 /.vscode
 virt/virt
 *.o
-virt/virt
+*.DS_Store
+/virt/milo_umasm
